@@ -732,7 +732,12 @@
   // ── Analyse ───────────────────────────────────────────────
   btnAnalyse.addEventListener('click', async () => {
     const value = txInput.value.trim();
+    errorBanner.style.display = 'none';
+    currentReport = null;
+    resultsZone.classList.remove('visible');
+
     if (!value) {
+      errorBanner.textContent = 'Please paste a PSBT, raw transaction hex, or txid before analysing.';
       errorBanner.style.display = 'block';
       return;
     }
@@ -758,24 +763,63 @@
     renderReport(report);
   });
 
-  // ── Fetch: real API with mock fallback ────────────────────
+  // ── Fetch: real API, with mock fallback only for local-file demos ─────
   async function fetchScore(value, inputType) {
+    validateInput(value, inputType);
+
     // Try the live backend first
     try {
       const res = await fetch('/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: value, input_type: inputType }),
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(30000)
       });
       if (res.ok) return await res.json();
-    } catch (_) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || 'The backend could not parse this input.');
+    } catch (err) {
+      const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
+      const backendUnavailable = timedOut || err.message === 'Failed to fetch';
+      if (!backendUnavailable || window.location.protocol !== 'file:') {
+        if (timedOut) {
+          throw new Error('The backend took too long to review this transaction. Please try again.');
+        }
+        throw err;
+      }
       // backend not running — fall through to mock
     }
 
     // Offline mock (700 ms simulated delay)
     await delay(700);
     return value.startsWith('cHNidP8') ? MOCK_GOOD : MOCK_RESULT;
+  }
+
+  function validateInput(value, inputType) {
+    if (inputType === 'txid' && !/^[0-9a-fA-F]{64}$/.test(value)) {
+      throw new Error('Invalid txid. Expected 64 hexadecimal characters.');
+    }
+
+    if (inputType === 'rawtx') {
+      if (!/^[0-9a-fA-F]+$/.test(value) || value.length % 2 !== 0) {
+        throw new Error('Invalid raw transaction hex.');
+      }
+    }
+
+    if (inputType === 'psbt') {
+      try {
+        const bytes = Uint8Array.from(atob(value), c => c.charCodeAt(0));
+        const validMagic = bytes.length >= 5
+          && bytes[0] === 0x70
+          && bytes[1] === 0x73
+          && bytes[2] === 0x62
+          && bytes[3] === 0x74
+          && bytes[4] === 0xff;
+        if (!validMagic) throw new Error();
+      } catch (_) {
+        throw new Error('Invalid PSBT. Expected base64 PSBT data.');
+      }
+    }
   }
 
   function delay(ms) { return new Promise(r => setTimeout(r, ms)); }

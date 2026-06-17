@@ -1,13 +1,20 @@
 from scorer.report import Finding, Severity
 from scorer.lookup import get_address_txs
 
+MAX_ADDRESS_LOOKUPS = 5
+
 
 def check(tx, psbt_meta) -> Finding | None:
+    checked = 0
     for inp in tx.inputs:
         address = inp.address
-        if not address:
+        if not address or checked >= MAX_ADDRESS_LOOKUPS:
             continue
-        txs = get_address_txs(address)
+        checked += 1
+        try:
+            txs = get_address_txs(address)
+        except Exception:
+            continue
         if len(txs) > 1:
             return Finding(
                 heuristic_id="H3",

@@ -1,5 +1,6 @@
 """utxo-privacy-scorer — public API."""
 from scorer.parser import parse
+from scorer.parser import parse_as
 from scorer.report import Report, Finding, Severity
 from scorer.labels import init_db, import_sparrow
 from scorer.heuristics import ALL as _HEURISTICS
@@ -9,8 +10,16 @@ _H8_SCORE_CAP = 40
 
 def score(input_str: str) -> Report:
     """Score a PSBT (base64), raw tx hex, or txid. Returns a Report."""
+    return _score_parsed(*parse(input_str))
+
+
+def score_as(input_str: str, input_type: str) -> Report:
+    """Score input using an explicit type: psbt, rawtx, or txid."""
+    return _score_parsed(*parse_as(input_str, input_type))
+
+
+def _score_parsed(tx, psbt_meta) -> Report:
     init_db()
-    tx, psbt_meta = parse(input_str)
 
     findings = []
     for module in _HEURISTICS:

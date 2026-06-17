@@ -6,7 +6,7 @@ DB_PATH = Path.home() / ".utxo-privacy-scorer" / "labels.db"
 
 
 def init_db():
-    DB_PATH.parent.mkdir(exist_ok=True)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_PATH)
     con.execute("""
         CREATE TABLE IF NOT EXISTS labels (

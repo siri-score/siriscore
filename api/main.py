@@ -1,18 +1,21 @@
 """FastAPI backend for SiriScore web UI."""
 from pathlib import Path
+import logging
+import time
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import tempfile, os
 
-from scorer import score as _score, import_labels
+from scorer import score_as as _score_as, import_labels
 from scorer.labels import get_all_labels, add_label, init_db
 
 app = FastAPI(title="SiriScore API")
 init_db()
 
 WEB_DIR = Path(__file__).parent.parent / "web"
+logger = logging.getLogger("siriscore.api")
 
 
 class ScoreRequest(BaseModel):
@@ -29,10 +32,31 @@ class LabelRequest(BaseModel):
 
 @app.post("/score")
 def score_tx(req: ScoreRequest):
+    started = time.perf_counter()
+    preview = req.input.strip()[:16]
+    logger.info("score.start input_type=%s preview=%s...", req.input_type, preview)
     try:
-        report = _score(req.input)
+        report = _score_as(req.input, req.input_type)
     except Exception as e:
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        logger.warning(
+            "score.error input_type=%s elapsed_ms=%.1f error=%s",
+            req.input_type,
+            elapsed_ms,
+            e,
+        )
         raise HTTPException(status_code=400, detail=str(e))
+
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    logger.info(
+        "score.done input_type=%s elapsed_ms=%.1f score=%s inputs=%s outputs=%s findings=%s",
+        req.input_type,
+        elapsed_ms,
+        report.score,
+        report.input_count,
+        report.output_count,
+        len(report.findings),
+    )
 
     return {
         "score": report.score,
