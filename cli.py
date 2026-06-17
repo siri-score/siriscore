@@ -67,6 +67,16 @@ def main():
                 }
                 for f in report.findings
             ],
+            "checks": [
+                {
+                    "id": c.heuristic_id,
+                    "severity": c.severity.value,
+                    "title": c.title,
+                    "status": c.status,
+                    "reason": c.reason,
+                }
+                for c in report.checks
+            ],
             "input_count": report.input_count,
             "output_count": report.output_count,
             "psbt_version": report.psbt_version,

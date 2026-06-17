@@ -332,7 +332,18 @@
 
     .finding-card.critical { border-left-color: var(--red); }
     .finding-card.warning  { border-left-color: var(--amber); }
-    .finding-card.info     { border-left-color: #CBD5E1; }
+    .finding-card.info     { border-left-color: var(--slate); }
+
+    .no-findings {
+      background: var(--green-light);
+      border: 1px solid #86EFAC;
+      border-left: 3px solid var(--green);
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 500;
+    }
 
     .finding-row1 {
       display: flex;
@@ -349,7 +360,7 @@
 
     .severity-badge.critical { background: var(--red-light);   color: var(--red); }
     .severity-badge.warning  { background: var(--amber-light); color: var(--amber); }
-    .severity-badge.info     { background: var(--slate-light); color: var(--slate); }
+    .severity-badge.info     { background: var(--slate-light); color: var(--slate); border: 1px solid var(--border); }
 
     .heuristic-id {
       font-family: 'JetBrains Mono', monospace;
@@ -378,6 +389,65 @@
       color: var(--orange);
       margin-top: 8px;
     }
+
+    /* ── Checks ─────────────────────────────────────────────── */
+    .checks-section { margin-top: 32px; }
+
+    .check-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .check-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .check-row.fail { border-left-color: var(--red); }
+    .check-row.pass { border-left-color: var(--green); }
+    .check-row.unavailable { border-left-color: var(--amber); }
+
+    .check-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .check-title {
+      min-width: 0;
+    }
+
+    .check-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .check-reason {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .check-status {
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .check-status.fail { background: var(--red-light); color: var(--red); }
+    .check-status.pass { background: var(--green-light); color: var(--green); }
+    .check-status.unavailable { background: var(--amber-light); color: var(--amber); }
 
     /* ── Coin labels ────────────────────────────────────────── */
     .labels-section { margin-top: 32px; }
@@ -568,6 +638,15 @@
       <div id="findings-list"></div>
     </div>
 
+    <!-- Checks -->
+    <div class="checks-section" id="checks-section">
+      <div class="section-head">
+        <h2>Checks</h2>
+        <span class="count-badge" id="checks-count"></span>
+      </div>
+      <div class="check-list" id="checks-list"></div>
+    </div>
+
     <!-- Coin labels -->
     <div class="labels-section" id="labels-section" style="display:none">
       <div class="section-head">
@@ -684,6 +763,8 @@
   const metaChips     = document.getElementById('meta-chips');
   const findingsCount = document.getElementById('findings-count');
   const findingsList  = document.getElementById('findings-list');
+  const checksCount    = document.getElementById('checks-count');
+  const checksList     = document.getElementById('checks-list');
   const labelsSection = document.getElementById('labels-section');
   const labelsList    = document.getElementById('labels-list');
   const nextList      = document.getElementById('next-list');
@@ -826,7 +907,7 @@
 
   // ── Render ────────────────────────────────────────────────
   function renderReport(report) {
-    const { score, findings, labels, input_count, output_count, psbt_version } = report;
+    const { score, findings, checks, labels, input_count, output_count, psbt_version } = report;
 
     // Score + verdict
     const { label: vLabel, cls: vCls, colour: vColour } = verdictFor(score);
@@ -848,7 +929,15 @@
 
     // Findings
     findingsCount.textContent = findings.length + ' issue' + (findings.length !== 1 ? 's' : '');
-    findingsList.innerHTML = findings.map(renderFinding).join('');
+    const orderedFindings = sortFindings(findings);
+    findingsList.innerHTML = orderedFindings.length > 0
+      ? orderedFindings.map(renderFinding).join('')
+      : renderNoFindings();
+
+    // Checks
+    const orderedChecks = sortChecks(checks || checksFromFindings(findings));
+    checksCount.textContent = orderedChecks.length + ' checks';
+    checksList.innerHTML = orderedChecks.map(renderCheck).join('');
 
     // Coin labels
     if (labels && labels.length > 0) {
@@ -859,14 +948,10 @@
     }
 
     // What to do next (critical first, then warnings, max 3)
-    const ordered = [
-      ...findings.filter(f => f.severity === 'critical'),
-      ...findings.filter(f => f.severity === 'warning'),
-      ...findings.filter(f => f.severity === 'info')
-    ].slice(0, 3);
+    const ordered = orderedFindings.slice(0, 3);
     nextList.innerHTML = ordered
       .map(f => `<li>${escHtml(f.suggestion)}</li>`)
-      .join('');
+      .join('') || '<li>No immediate action needed.</li>';
 
     // Show
     resultsZone.classList.add('visible');
@@ -883,6 +968,18 @@
     return `<span class="chip">${escHtml(text)}</span>`;
   }
 
+  function sortFindings(findings) {
+    const rank = { critical: 0, warning: 1, info: 2 };
+    return [...findings].sort((a, b) => {
+      const severityDelta = (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3);
+      return severityDelta || String(a.id).localeCompare(String(b.id));
+    });
+  }
+
+  function renderNoFindings() {
+    return '<div class="no-findings">No issues found</div>';
+  }
+
   function renderFinding(f) {
     const sev = f.severity.toLowerCase();
     return `
@@ -894,6 +991,40 @@
         <div class="finding-title">${escHtml(f.title)}</div>
         <div class="finding-detail">${escHtml(f.detail)}</div>
         <div class="finding-suggestion">&rarr; ${escHtml(f.suggestion)}</div>
+      </div>`;
+  }
+
+  function sortChecks(checks) {
+    const statusRank = { fail: 0, unavailable: 1, pass: 2 };
+    const severityRank = { critical: 0, warning: 1, info: 2 };
+    return [...checks].sort((a, b) => {
+      const statusDelta = (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3);
+      if (statusDelta) return statusDelta;
+      const severityDelta = (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3);
+      return severityDelta || String(a.id).localeCompare(String(b.id));
+    });
+  }
+
+  function checksFromFindings(findings) {
+    return findings.map(f => ({
+      id: f.id,
+      severity: f.severity,
+      title: f.title,
+      status: 'fail',
+      reason: ''
+    }));
+  }
+
+  function renderCheck(c) {
+    const status = c.status || 'unavailable';
+    return `
+      <div class="check-row ${escHtml(status)}">
+        <span class="check-id">${escHtml(c.id)}</span>
+        <div class="check-title">
+          <div class="check-name">${escHtml(c.title)}</div>
+          ${c.reason ? `<div class="check-reason">${escHtml(c.reason)}</div>` : ''}
+        </div>
+        <span class="check-status ${escHtml(status)}">${escHtml(status)}</span>
       </div>`;
   }
 
@@ -933,11 +1064,24 @@
     txt += `Generated: ${now}\n\n`;
 
     txt += `FINDINGS\n--------\n`;
-    for (const f of r.findings) {
+    const reportFindings = sortFindings(r.findings);
+    if (reportFindings.length === 0) {
+      txt += `No issues found\n\n`;
+    }
+    for (const f of reportFindings) {
       txt += `[${f.severity.toUpperCase()}] ${f.id} — ${f.title}\n`;
       txt += `${f.detail}\n`;
       txt += `Fix: ${f.suggestion}\n\n`;
     }
+
+    txt += `CHECKS\n------\n`;
+    const reportChecks = sortChecks(r.checks || checksFromFindings(r.findings));
+    for (const c of reportChecks) {
+      txt += `[${c.status.toUpperCase()}] ${c.id} — ${c.title}`;
+      if (c.reason) txt += ` (${c.reason})`;
+      txt += `\n`;
+    }
+    txt += '\n';
 
     if (r.labels && r.labels.length > 0) {
       txt += `COIN LABELS\n-----------\n`;
@@ -949,12 +1093,9 @@
     }
 
     txt += `WHAT TO DO NEXT\n---------------\n`;
-    const ordered = [
-      ...r.findings.filter(f => f.severity === 'critical'),
-      ...r.findings.filter(f => f.severity === 'warning'),
-      ...r.findings.filter(f => f.severity === 'info')
-    ].slice(0, 3);
+    const ordered = reportFindings.slice(0, 3);
     ordered.forEach((f, i) => { txt += `${i + 1}. ${f.suggestion}\n`; });
+    if (ordered.length === 0) txt += `No immediate action needed.\n`;
 
     const blob = new Blob([txt], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

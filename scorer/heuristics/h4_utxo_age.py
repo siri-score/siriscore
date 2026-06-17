@@ -6,6 +6,9 @@ MAX_UTXO_HEIGHT_LOOKUPS = 8
 
 
 def check(tx, psbt_meta) -> Finding | None:
+    if len(tx.inputs) < 2:
+        return None
+
     heights = []
     seen_txids = set()
     for inp in tx.inputs:

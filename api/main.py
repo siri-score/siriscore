@@ -75,6 +75,16 @@ def score_tx(req: ScoreRequest):
             }
             for f in report.findings
         ],
+        "checks": [
+            {
+                "id": c.heuristic_id,
+                "severity": c.severity.value,
+                "title": c.title,
+                "status": c.status,
+                "reason": c.reason,
+            }
+            for c in report.checks
+        ],
         "labels": get_all_labels(),
     }
 
