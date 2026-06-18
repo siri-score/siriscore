@@ -1,4 +1,5 @@
 README.md
+cli.py
 pyproject.toml
 api/__init__.py
 api/main.py
@@ -7,6 +8,7 @@ scorer/labels.py
 scorer/lookup.py
 scorer/parser.py
 scorer/report.py
+scorer/rpc.py
 scorer/heuristics/__init__.py
 scorer/heuristics/h1_script_mismatch.py
 scorer/heuristics/h2_round_amount.py
@@ -17,10 +19,12 @@ scorer/heuristics/h6_dust.py
 scorer/heuristics/h7_bip69.py
 scorer/heuristics/h8_tainted_label.py
 tests/test_checks.py
+tests/test_cli.py
 tests/test_heuristics.py
 tests/test_labels.py
 tests/test_lookup.py
 tests/test_parser.py
+tests/test_rpc.py
 utxo_privacy_scorer.egg-info/PKG-INFO
 utxo_privacy_scorer.egg-info/SOURCES.txt
 utxo_privacy_scorer.egg-info/dependency_links.txt

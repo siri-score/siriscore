@@ -24,9 +24,9 @@ dev = ["pytest>=8", "pytest-cov", "httpx"]
 [project.scripts]
 btc-privacy-check = "cli:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["scorer*", "api*"]
+[tool.setuptools]
+packages = ["scorer", "scorer.heuristics", "api"]
+py-modules = ["cli"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
