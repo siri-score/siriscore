@@ -1,5 +1,4 @@
 """Tests for Bitcoin Core RPC backend and its integration with H3/H4/score()."""
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -340,8 +339,7 @@ class TestBuildChecksRPCBackend:
         return tx
 
     def test_h3_unavailable_with_rpc_backend(self):
-        from scorer import _build_checks, _score_parsed
-        from scorer.rpc import RPCBackend
+        from scorer import _build_checks
 
         backend = _make_backend()
         tx = self._psbt_tx()
@@ -380,7 +378,6 @@ class TestBuildChecksRPCBackend:
     def test_h4_not_affected_by_rpc_backend_sentinel(self):
         """H4 should run normally with RPC backend — no unavailable override."""
         from scorer import _build_checks
-        from scorer.rpc import RPCBackend
 
         backend = _make_backend()
         tx = self._psbt_tx()
