@@ -603,7 +603,7 @@
       </svg>
       Import labels from Sparrow Wallet
     </button>
-    <input type="file" id="file-input" accept=".json" />
+    <input type="file" id="file-input" accept=".json,.jsonl" />
   </section>
 
   <!-- Results zone -->
@@ -795,7 +795,7 @@
     const file = fileInput.files[0];
     if (!file) return;
 
-    // Try real API first; fall back silently if backend not running
+    errorBanner.style.display = 'none';
     try {
       const form = new FormData();
       form.append('file', file);
@@ -803,9 +803,13 @@
       if (res.ok) {
         const data = await res.json();
         alert(`Imported ${data.imported} label(s) from ${file.name}`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `Could not import labels from ${file.name}`);
       }
-    } catch (_) {
-      alert(`Labels file "${file.name}" selected. Connect the API server to persist labels.`);
+    } catch (err) {
+      errorBanner.textContent = 'Import failed: ' + err.message;
+      errorBanner.style.display = 'block';
     }
     fileInput.value = '';
   });
@@ -1029,7 +1033,9 @@
   }
 
   function renderLabel(l) {
-    const taintedAndActive = l.tag === 'tainted' && l.in_inputs;
+    const tag = l.tag || 'unknown';
+    const type = l.label_type || 'utxo';
+    const taintedAndActive = tag === 'tainted' && l.in_inputs;
     return `
       <div class="label-row${taintedAndActive ? ' tainted-active' : ''}">
         <div class="label-row-inner">
@@ -1038,12 +1044,24 @@
             <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
             <line x1="7" y1="7" x2="7.01" y2="7"/>
           </svg>
-          <span class="label-utxo mono">${escHtml(l.short_id || shortId(l.txid, l.vout))}</span>
+          <span class="label-utxo mono">${escHtml(l.short_id || labelRef(l))}</span>
           <span class="label-text">${escHtml(l.label)}</span>
-          <span class="tag-pill ${escHtml(l.tag)}">${escHtml(l.tag)}</span>
+          <span class="tag-pill ${escHtml(tag)}">${escHtml(type)} / ${escHtml(tag)}</span>
         </div>
         ${taintedAndActive ? `<div class="label-taint-warning">This UTXO is flagged as tainted and is included in your transaction inputs.</div>` : ''}
       </div>`;
+  }
+
+  function labelRef(label) {
+    if (label.label_type === 'addr') return label.address || label.ref || 'address';
+    if (label.label_type === 'tx') return shortTxid(label.txid || label.ref);
+    if (label.txid && label.vout !== null && label.vout !== undefined) return shortId(label.txid, label.vout);
+    return label.ref || label.label_type || 'label';
+  }
+
+  function shortTxid(txid) {
+    if (!txid) return 'transaction';
+    return txid.slice(0, 8) + '…' + txid.slice(-4);
   }
 
   function shortId(txid, vout) {
