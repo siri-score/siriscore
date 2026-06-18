@@ -1,11 +1,9 @@
 """Tests for CLI exit codes and --json / --fail-below flags."""
 import json
-import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-import pytest
 
-from scorer.report import Report, Severity
+from scorer.report import Report
 
 
 def _make_report(score=80, findings=None, checks=None):

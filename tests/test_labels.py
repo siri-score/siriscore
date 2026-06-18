@@ -1,8 +1,5 @@
 """Tests for SQLite label store."""
-import pytest
-import tempfile
 import json
-from pathlib import Path
 
 
 def test_add_and_retrieve(tmp_path, monkeypatch):
