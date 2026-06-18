@@ -25,6 +25,7 @@
   <nav class="nav-links">
     <a href="https://github.com/bitcoin/bips" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+    <a href="#" id="learn-link">Learn</a>
   </nav>
 </header>
 
@@ -126,6 +127,32 @@
 
   </section>
 </div>
+
+<!-- ── Glossary overlay + panel ─────────────────────────────── -->
+<div class="glossary-backdrop" id="glossary-backdrop"></div>
+
+<aside class="glossary-panel" id="glossary-panel" aria-label="Bitcoin privacy glossary">
+  <div class="glossary-header">
+    <div>
+      <div class="glossary-title">Bitcoin privacy glossary</div>
+      <div class="glossary-subtitle">Terms used in SiriScore explained plainly.</div>
+    </div>
+    <button class="glossary-close" id="glossary-close" aria-label="Close glossary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <input class="glossary-search" id="glossary-search" type="text"
+         placeholder="Search terms..." autocomplete="off" spellcheck="false" />
+
+  <div class="glossary-list" id="glossary-list"></div>
+
+  <div class="glossary-empty" id="glossary-empty" style="display:none">
+    No terms match your search.
+  </div>
+</aside>
 
 <script src="app.js"></script>
 </body>

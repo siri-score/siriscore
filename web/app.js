@@ -414,3 +414,127 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ── Glossary ──────────────────────────────────────────────────
+const GLOSSARY_TERMS = [
+  {
+    term: 'UTXO',
+    definition: 'Unspent Transaction Output. A chunk of Bitcoin you received and have not yet spent. Bitcoin wallets are collections of UTXOs, not a single balance. When you send Bitcoin, you spend one or more UTXOs as inputs.',
+    why: 'Which UTXOs you spend together permanently links them in chain analysis databases.'
+  },
+  {
+    term: 'PSBT',
+    definition: 'Partially Signed Bitcoin Transaction (BIP-174). A portable transaction format that carries all the information a signer needs but is not yet broadcast. Standard for hardware wallets and multisig.',
+    why: 'The best time to check your privacy is when you have a PSBT — before you sign.'
+  },
+  {
+    term: 'Change output',
+    definition: 'When your input UTXOs are worth more than the payment plus fee, your wallet sends the remainder back to an address you control. This is your change.',
+    why: 'Change outputs are the most common source of wallet fingerprinting. If an analyst can identify your change, they can track your wallet across transactions.'
+  },
+  {
+    term: 'Script type',
+    definition: 'The locking condition on a Bitcoin output. Common types: P2PKH (legacy), P2SH (script hash), P2WPKH (native SegWit), P2TR (Taproot).',
+    why: 'If your inputs and change output use different script types, the change is trivially identifiable.'
+  },
+  {
+    term: 'Chain analysis',
+    definition: 'The practice of tracing Bitcoin transactions to identify wallet owners, cluster addresses, and track fund flows. Used by firms like Chainalysis and Elliptic.',
+    why: 'SiriScore applies the same heuristics chain analysts use, so you can see your exposure before broadcast.'
+  },
+  {
+    term: 'Heuristic',
+    definition: 'A pattern-based rule used to make inferences about Bitcoin transactions. Chain analysis firms use heuristics to guess which outputs are change, which addresses belong to the same wallet, and where funds originated.',
+    why: 'SiriScore runs 8 heuristics. Each one that fires is a fingerprint an analyst would exploit.'
+  },
+  {
+    term: 'Address reuse',
+    definition: 'Using the same Bitcoin address to receive funds more than once. Links all transactions to that address together permanently.',
+    why: 'The strongest single privacy failure in Bitcoin. Avoid it entirely with silent payments (BIP-352).'
+  },
+  {
+    term: 'Dust',
+    definition: 'A UTXO worth less than 546 satoshis — below the threshold to spend economically. Often created deliberately by adversaries (dust attacks) to track wallets.',
+    why: 'Spending a dust input may complete a dust attack, linking your wallet cluster to the attacker\'s tracking.'
+  },
+  {
+    term: 'CIOH',
+    definition: 'Common Input Ownership Heuristic. The assumption that all inputs in a transaction belong to the same wallet. The foundational assumption of most wallet clustering.',
+    why: 'Consolidating many UTXOs in one transaction permanently links them in every chain analysis database.'
+  },
+  {
+    term: 'BIP-69',
+    definition: 'A standard for lexicographic ordering of transaction inputs and outputs. Wallets that implement it are indistinguishable from each other on ordering alone.',
+    why: 'Non-BIP69 ordering is a wallet fingerprint — it can identify which software constructed the transaction.'
+  },
+  {
+    term: 'Silent payments (BIP-352)',
+    definition: 'A protocol that lets a sender pay a static, published address without ever reusing it on-chain. Each payment generates a unique on-chain address derived from the sender\'s key.',
+    why: 'Eliminates address reuse permanently without requiring coordination for each payment.'
+  },
+  {
+    term: 'nLockTime',
+    definition: 'A transaction field that specifies the earliest block height or time at which the transaction can be included in a block. Most wallets set it to the current block height as an anti-fee-sniping measure.',
+    why: 'nLockTime of 0 is a wallet fingerprint — it reveals the transaction was built by software that does not implement anti-fee-sniping.'
+  },
+];
+
+const glossaryPanel    = document.getElementById('glossary-panel');
+const glossaryBackdrop = document.getElementById('glossary-backdrop');
+const glossarySearch   = document.getElementById('glossary-search');
+const glossaryList     = document.getElementById('glossary-list');
+const glossaryEmpty    = document.getElementById('glossary-empty');
+
+function renderGlossary(filter) {
+  const q = (filter || '').toLowerCase().trim();
+  const matches = q
+    ? GLOSSARY_TERMS.filter(t =>
+        t.term.toLowerCase().includes(q) ||
+        t.definition.toLowerCase().includes(q) ||
+        (t.why && t.why.toLowerCase().includes(q))
+      )
+    : GLOSSARY_TERMS;
+
+  if (matches.length === 0) {
+    glossaryList.innerHTML = '';
+    glossaryEmpty.style.display = 'block';
+    return;
+  }
+
+  glossaryEmpty.style.display = 'none';
+  glossaryList.innerHTML = matches.map(t => `
+    <div class="term-card">
+      <div class="term-name">${escHtml(t.term)}</div>
+      <div class="term-definition">${escHtml(t.definition)}</div>
+      ${t.why ? `<div class="term-why">${escHtml(t.why)}</div>` : ''}
+    </div>`).join('');
+}
+
+function openGlossary() {
+  glossaryPanel.classList.add('open');
+  glossaryBackdrop.classList.add('open');
+  glossarySearch.value = '';
+  renderGlossary('');
+  glossarySearch.focus();
+}
+
+function closeGlossary() {
+  glossaryPanel.classList.remove('open');
+  glossaryBackdrop.classList.remove('open');
+}
+
+document.getElementById('learn-link').addEventListener('click', e => {
+  e.preventDefault();
+  openGlossary();
+});
+
+document.getElementById('glossary-close').addEventListener('click', closeGlossary);
+glossaryBackdrop.addEventListener('click', closeGlossary);
+
+glossarySearch.addEventListener('input', () => {
+  renderGlossary(glossarySearch.value);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGlossary();
+});
