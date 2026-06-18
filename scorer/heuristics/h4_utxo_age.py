@@ -9,6 +9,8 @@ def check(tx, psbt_meta) -> Finding | None:
     if len(tx.inputs) < 2:
         return None
 
+    backend = psbt_meta.get("_backend")
+    _get = backend.get_utxo_block_height if backend else get_utxo_block_height
     heights = []
     seen_txids = set()
     for inp in tx.inputs:
@@ -16,7 +18,7 @@ def check(tx, psbt_meta) -> Finding | None:
             continue
         seen_txids.add(inp.txid)
         try:
-            h = get_utxo_block_height(inp.txid)
+            h = _get(inp.txid)
         except Exception:
             continue
         if h is not None:
