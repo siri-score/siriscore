@@ -5,6 +5,8 @@ MAX_ADDRESS_LOOKUPS = 5
 
 
 def check(tx, psbt_meta) -> Finding | None:
+    backend = psbt_meta.get("_backend")
+    _get = backend.get_address_txs if backend else get_address_txs
     checked = 0
     for inp in tx.inputs:
         address = inp.address
@@ -12,7 +14,7 @@ def check(tx, psbt_meta) -> Finding | None:
             continue
         checked += 1
         try:
-            txs = get_address_txs(address)
+            txs = _get(address)
         except Exception:
             continue
         if len(txs) > 1:
