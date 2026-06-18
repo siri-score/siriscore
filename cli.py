@@ -10,6 +10,7 @@ from scorer import score, import_labels
 from scorer.report import Severity
 
 console = Console()
+err_console = Console(stderr=True)
 
 SEVERITY_STYLES = {
     Severity.CRITICAL: ("red", "CRITICAL"),
@@ -51,7 +52,14 @@ def main():
         console.print(f"Imported {n} labels from {args.import_sparrow}")
 
     input_str = args.psbt or args.rawtx or args.txid
-    report = score(input_str)
+    try:
+        report = score(input_str)
+    except ValueError as exc:
+        if args.json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+        else:
+            err_console.print(f"[red]Error:[/red] {exc}")
+        sys.exit(2)
 
     if args.json_output:
         print(json.dumps({

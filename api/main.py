@@ -6,7 +6,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import tempfile, os
+import tempfile
+import os
 
 from scorer import score_as as _score_as, import_labels
 from scorer.labels import get_all_labels, add_label, init_db
@@ -21,6 +22,7 @@ logger = logging.getLogger("siriscore.api")
 class ScoreRequest(BaseModel):
     input: str
     input_type: str = "psbt"  # psbt | rawtx | txid
+    lookup: bool = True        # True = run H3+H4 via mempool.space (demo default)
 
 
 class LabelRequest(BaseModel):
@@ -36,7 +38,7 @@ def score_tx(req: ScoreRequest):
     preview = req.input.strip()[:16]
     logger.info("score.start input_type=%s preview=%s...", req.input_type, preview)
     try:
-        report = _score_as(req.input, req.input_type)
+        report = _score_as(req.input, req.input_type, lookup=req.lookup)
     except Exception as e:
         elapsed_ms = (time.perf_counter() - started) * 1000
         logger.warning(
@@ -118,5 +120,6 @@ def serve_index():
     return FileResponse(WEB_DIR / "index.html")
 
 
-# Mount static assets last so API routes always take priority
-app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
+# Serve style.css and app.js at their bare paths (e.g. GET /style.css).
+# Must come after all API routes so it never shadows /score, /labels, etc.
+app.mount("/", StaticFiles(directory=str(WEB_DIR)), name="static")

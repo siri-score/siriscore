@@ -53,6 +53,38 @@ btc-privacy-check --psbt <b64> --json
 
 ---
 
+## Automated CI integration
+
+Use `--fail-below` to gate a build on privacy score. The CLI uses distinct exit codes so CI can distinguish a bad score from a broken input:
+
+| Exit code | Meaning |
+|-----------|---------|
+| 0 | Score is at or above the threshold (or no threshold set) |
+| 1 | Score is below the `--fail-below` threshold |
+| 2 | Parse error — invalid PSBT/hex/txid or network failure |
+
+```bash
+# Fail the build if privacy score is below 60
+btc-privacy-check --psbt "$PSBT" --fail-below 60
+
+# Machine-readable JSON output (useful for log parsing)
+btc-privacy-check --psbt "$PSBT" --json
+
+# Both flags together — JSON output, exit 1 if score < 60
+btc-privacy-check --psbt "$PSBT" --fail-below 60 --json
+```
+
+Example GitHub Actions step:
+
+```yaml
+- name: Check transaction privacy
+  run: btc-privacy-check --psbt "${{ env.PSBT }}" --fail-below 60 --json
+```
+
+On a parse error with `--json`, stdout is `{"error": "<reason>"}` and the exit code is 2, so scripts can distinguish it from a score failure.
+
+---
+
 ## Using the library
 
 ```python

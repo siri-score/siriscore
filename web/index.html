@@ -7,550 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg:             #F9F7F4;
-      --surface:        #FFFFFF;
-      --border:         #E2E8F0;
-      --text-primary:   #0F172A;
-      --text-secondary: #475569;
-      --text-muted:     #94A3B8;
-
-      --orange:         #EA580C;
-      --orange-light:   #FFF7ED;
-      --orange-dark:    #C2410C;
-
-      --green:          #16A34A;
-      --green-light:    #DCFCE7;
-
-      --red:            #DC2626;
-      --red-light:      #FEF2F2;
-
-      --amber:          #D97706;
-      --amber-light:    #FFFBEB;
-
-      --slate:          #475569;
-      --slate-light:    #F8FAFC;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      padding-top: 56px;
-    }
-
-    .mono { font-family: 'JetBrains Mono', monospace; }
-
-    /* ── Header ─────────────────────────────────────────────── */
-    header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 56px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      z-index: 100;
-    }
-
-    .wordmark {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-
-    .wordmark-icon {
-      width: 28px; height: 28px;
-      background: var(--orange);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .wordmark-icon svg { width: 14px; height: 14px; }
-
-    .wordmark-text {
-      font-size: 20px;
-      font-weight: 600;
-      line-height: 1;
-    }
-
-    .wordmark-text .siri { color: var(--orange); }
-    .wordmark-text .score-part { color: var(--text-primary); }
-
-    .nav-links { display: flex; gap: 20px; }
-
-    .nav-links a {
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      text-decoration: none;
-      transition: color 150ms;
-    }
-
-    .nav-links a:hover { color: var(--orange); }
-
-    /* ── Page wrapper ───────────────────────────────────────── */
-    .page { max-width: 780px; margin: 0 auto; padding: 0 24px 64px; }
-
-    /* ── Input zone ─────────────────────────────────────────── */
-    .input-zone { padding: 48px 0 32px; }
-
-    .input-zone h1 { font-size: 20px; font-weight: 600; color: var(--text-primary); }
-
-    .input-zone .subtitle {
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Pill tabs */
-    .pill-tabs { display: flex; gap: 8px; margin-top: 20px; }
-
-    .pill {
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-secondary);
-      transition: background 150ms, color 150ms, border-color 150ms;
-    }
-
-    .pill.active {
-      background: var(--orange);
-      color: #fff;
-      border-color: var(--orange);
-    }
-
-    /* Textarea */
-    textarea {
-      margin-top: 12px;
-      width: 100%;
-      height: 120px;
-      resize: vertical;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      background: var(--surface);
-      color: var(--text-primary);
-      outline: none;
-      transition: border-color 150ms;
-      display: block;
-    }
-
-    textarea::placeholder { color: var(--text-muted); }
-    textarea:focus { border-color: var(--orange); }
-
-    /* Analyse button */
-    .btn-analyse {
-      margin-top: 12px;
-      width: 100%;
-      height: 48px;
-      background: var(--orange);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 150ms, transform 80ms, opacity 150ms;
-    }
-
-    .btn-analyse:hover { background: var(--orange-dark); }
-    .btn-analyse:active { transform: scale(0.98); }
-    .btn-analyse:disabled { opacity: 0.8; cursor: not-allowed; }
-
-    /* Import labels link */
-    .import-labels {
-      margin-top: 16px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--orange);
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-    }
-
-    .import-labels:hover { color: var(--orange-dark); }
-    #file-input { display: none; }
-
-    /* Error banner */
-    .error-banner {
-      display: none;
-      margin-top: 12px;
-      padding: 12px 16px;
-      background: var(--red-light);
-      border-left: 3px solid var(--red);
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--red);
-    }
-
-    /* ── Results zone ───────────────────────────────────────── */
-    .results-zone {
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 200ms;
-    }
-
-    .results-zone.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* Score card */
-    .score-card {
-      background: var(--surface);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 32px;
-      display: flex;
-      gap: 32px;
-    }
-
-    .score-left { width: 180px; flex-shrink: 0; }
-
-    .score-number {
-      font-size: 64px;
-      font-weight: 600;
-      line-height: 1;
-    }
-
-    .score-label {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .verdict-pill {
-      display: inline-block;
-      margin-top: 8px;
-      border-radius: 12px;
-      padding: 2px 10px;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .verdict-good  { background: var(--green-light);  color: var(--green); }
-    .verdict-fair  { background: var(--amber-light);  color: var(--amber); }
-    .verdict-poor  { background: var(--red-light);    color: var(--red); }
-
-    .score-right { flex: 1; min-width: 0; }
-
-    /* Gauge */
-    .gauge-wrap { position: relative; }
-
-    .gauge-bar {
-      display: flex;
-      height: 8px;
-      border-radius: 4px;
-      overflow: visible;
-    }
-
-    .gauge-seg-red   { width: 39%; background: var(--red);   border-radius: 4px 0 0 4px; }
-    .gauge-seg-amber { width: 30%; background: var(--amber); }
-    .gauge-seg-green { width: 31%; background: var(--green); border-radius: 0 4px 4px 0; }
-
-    .gauge-dot {
-      position: absolute;
-      top: 50%;
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      background: #fff;
-      border-width: 2px;
-      border-style: solid;
-      transform: translate(-50%, -50%);
-      transition: left 400ms ease;
-    }
-
-    /* Metadata chips */
-    .meta-chips {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      background: var(--slate-light);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 3px 10px;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-secondary);
-    }
-
-    /* ── Section headings ───────────────────────────────────── */
-    .section-head {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .section-head h2 { font-size: 20px; font-weight: 600; color: var(--text-primary); }
-
-    .count-badge {
-      background: var(--orange);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 12px;
-      padding: 2px 10px;
-    }
-
-    /* ── Finding cards ──────────────────────────────────────── */
-    .findings-section { margin-top: 32px; }
-
-    .finding-card {
-      background: var(--surface);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      padding: 16px 20px;
-      margin-bottom: 8px;
-      border-left-width: 3px;
-      border-left-style: solid;
-    }
-
-    .finding-card.critical { border-left-color: var(--red); }
-    .finding-card.warning  { border-left-color: var(--amber); }
-    .finding-card.info     { border-left-color: var(--slate); }
-
-    .no-findings {
-      background: var(--green-light);
-      border: 1px solid #86EFAC;
-      border-left: 3px solid var(--green);
-      border-radius: 8px;
-      padding: 16px 20px;
-      color: var(--green);
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .finding-row1 {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .severity-badge {
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .severity-badge.critical { background: var(--red-light);   color: var(--red); }
-    .severity-badge.warning  { background: var(--amber-light); color: var(--amber); }
-    .severity-badge.info     { background: var(--slate-light); color: var(--slate); border: 1px solid var(--border); }
-
-    .heuristic-id {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .finding-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-top: 8px;
-    }
-
-    .finding-detail {
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      line-height: 1.6;
-    }
-
-    .finding-suggestion {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--orange);
-      margin-top: 8px;
-    }
-
-    /* ── Checks ─────────────────────────────────────────────── */
-    .checks-section { margin-top: 32px; }
-
-    .check-list {
-      display: grid;
-      gap: 6px;
-    }
-
-    .check-row {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .check-row.fail { border-left-color: var(--red); }
-    .check-row.pass { border-left-color: var(--green); }
-    .check-row.unavailable { border-left-color: var(--amber); }
-
-    .check-id {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .check-title {
-      min-width: 0;
-    }
-
-    .check-name {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .check-reason {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    .check-status {
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-    }
-
-    .check-status.fail { background: var(--red-light); color: var(--red); }
-    .check-status.pass { background: var(--green-light); color: var(--green); }
-    .check-status.unavailable { background: var(--amber-light); color: var(--amber); }
-
-    /* ── Coin labels ────────────────────────────────────────── */
-    .labels-section { margin-top: 32px; }
-
-    .label-row {
-      background: var(--surface);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      padding: 12px 16px;
-      margin-bottom: 6px;
-    }
-
-    .label-row.tainted-active { background: var(--orange-light); }
-
-    .label-row-inner {
-      display: flex;
-      align-items: center;
-      gap: 0;
-    }
-
-    .label-utxo {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-left: 8px;
-    }
-
-    .label-text {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-left: 12px;
-      flex: 1;
-    }
-
-    .tag-pill {
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .tag-pill.tainted { background: var(--red-light);   color: var(--red); }
-    .tag-pill.coinjoin,
-    .tag-pill.clean   { background: var(--green-light); color: var(--green); }
-    .tag-pill.unknown { background: var(--slate-light); color: var(--slate); }
-
-    .label-taint-warning {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    /* ── What to do next ────────────────────────────────────── */
-    .next-card {
-      margin-top: 24px;
-      background: var(--orange-light);
-      border-left: 3px solid var(--orange);
-      border-radius: 8px;
-      padding: 16px 20px;
-    }
-
-    .next-card h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .next-card ol {
-      margin-top: 8px;
-      padding-left: 18px;
-    }
-
-    .next-card ol li {
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      line-height: 1.7;
-    }
-
-    /* ── Download button ────────────────────────────────────── */
-    .btn-download {
-      margin-top: 16px;
-      padding: 10px 20px;
-      background: #fff;
-      border: 1px solid var(--orange);
-      color: var(--orange);
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 150ms;
-    }
-
-    .btn-download:hover { background: var(--orange-light); }
-
-    /* ── Responsive ─────────────────────────────────────────── */
-    @media (max-width: 560px) {
-      .score-card { flex-direction: column; gap: 24px; }
-      .score-left { width: auto; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -558,7 +15,6 @@
 <header>
   <a class="wordmark" href="#">
     <div class="wordmark-icon">
-      <!-- lock icon -->
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -569,6 +25,7 @@
   <nav class="nav-links">
     <a href="https://github.com/bitcoin/bips" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+    <a href="#" id="learn-link">Learn</a>
   </nav>
 </header>
 
@@ -578,7 +35,7 @@
   <!-- Input zone -->
   <section class="input-zone">
     <h1>Check your transaction</h1>
-    <p class="subtitle">Paste a PSBT, raw transaction hex, or txid. Your data never leaves your browser.</p>
+    <p class="subtitle" id="privacy-caption"></p>
 
     <div class="pill-tabs">
       <button class="pill active" data-tab="psbt">PSBT</button>
@@ -589,14 +46,11 @@
     <textarea id="tx-input" spellcheck="false"
       placeholder="cHNidP8BAH0CAAAAAbxLLf9+AYfqfF69QAQuETnL..."></textarea>
 
-    <div class="error-banner" id="error-banner">
-      Please paste a PSBT, raw transaction hex, or txid before analysing.
-    </div>
+    <div class="error-banner" id="error-banner"></div>
 
     <button class="btn-analyse" id="btn-analyse">Analyse Transaction</button>
 
     <button class="import-labels" id="import-labels-btn">
-      <!-- tag icon -->
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
         <line x1="7" y1="7" x2="7.01" y2="7"/>
@@ -604,6 +58,13 @@
       Import labels from Sparrow Wallet
     </button>
     <input type="file" id="file-input" accept=".json" />
+
+    <label class="network-toggle">
+      <input type="checkbox" id="network-checks" checked />
+      <span>Enable network checks
+        <span class="network-toggle-detail">(H3: address reuse, H4: UTXO age — queries mempool.space)</span>
+      </span>
+    </label>
   </section>
 
   <!-- Results zone -->
@@ -617,7 +78,7 @@
         <div class="verdict-pill" id="verdict-pill"></div>
       </div>
       <div class="score-right">
-        <div class="gauge-wrap" id="gauge-wrap">
+        <div class="gauge-wrap">
           <div class="gauge-bar">
             <div class="gauge-seg-red"></div>
             <div class="gauge-seg-amber"></div>
@@ -630,7 +91,7 @@
     </div>
 
     <!-- Findings -->
-    <div class="findings-section" id="findings-section">
+    <div class="findings-section">
       <div class="section-head">
         <h2>Findings</h2>
         <span class="count-badge" id="findings-count"></span>
@@ -639,7 +100,7 @@
     </div>
 
     <!-- Checks -->
-    <div class="checks-section" id="checks-section">
+    <div class="checks-section">
       <div class="section-head">
         <h2>Checks</h2>
         <span class="count-badge" id="checks-count"></span>
@@ -656,7 +117,7 @@
     </div>
 
     <!-- What to do next -->
-    <div class="next-card" id="next-card">
+    <div class="next-card">
       <h3>What to do next</h3>
       <ol id="next-list"></ol>
     </div>
@@ -667,453 +128,32 @@
   </section>
 </div>
 
-<script>
-  // ── Mock data ─────────────────────────────────────────────
-  const MOCK_RESULT = {
-    score: 34,
-    psbt_version: 2,
-    input_count: 3,
-    output_count: 2,
-    findings: [
-      {
-        id: "H1",
-        severity: "critical",
-        title: "Script type mismatch",
-        detail: "Your inputs use P2WPKH but at least one output is P2TR. Mixing script types makes your change output trivially identifiable to a chain analyst.",
-        suggestion: "Send change to the same script type as your inputs (P2WPKH)."
-      },
-      {
-        id: "H3",
-        severity: "warning",
-        title: "Round-number payment amount",
-        detail: "Output #1 pays exactly 0.05000000 BTC. Round numbers strongly suggest the human-entered amount, which reveals which output is the payment and which is change.",
-        suggestion: "Add a small random offset to the payment amount when possible."
-      },
-      {
-        id: "H5",
-        severity: "info",
-        title: "Non-standard nLockTime",
-        detail: "nLockTime is set to 0. Most wallets set it to the current block height as an anti-fee-sniping measure. The absence is a wallet fingerprint.",
-        suggestion: "Use a wallet that sets nLockTime to the current tip height."
-      }
-    ],
-    labels: [
-      {
-        txid: "a4f1c9d2e3b5a6f7890abc12",
-        vout: 0,
-        short_id: "a4f1c9d2…a5b6:0",
-        label: "Kraken withdrawal",
-        tag: "tainted",
-        in_inputs: true
-      },
-      {
-        txid: "9c8b7a6d5e4f3a2b1c0d9e8f",
-        vout: 1,
-        short_id: "9c8b7a6d…0493:1",
-        label: "Whirlpool 0.01 pool",
-        tag: "coinjoin",
-        in_inputs: false
-      },
-      {
-        txid: "11223344556677889900aabb",
-        vout: 2,
-        short_id: "11223344…5566:2",
-        label: "Self-transfer cold storage",
-        tag: "clean",
-        in_inputs: false
-      }
-    ]
-  };
+<!-- ── Glossary overlay + panel ─────────────────────────────── -->
+<div class="glossary-backdrop" id="glossary-backdrop"></div>
 
-  const MOCK_GOOD = {
-    score: 96,
-    psbt_version: 2,
-    input_count: 3,
-    output_count: 2,
-    findings: [
-      {
-        id: "H1",
-        severity: "critical",
-        title: "Script type mismatch",
-        detail: "Your inputs use P2WPKH but at least one output is P2TR.",
-        suggestion: "Send change to the same script type as your inputs (P2WPKH)."
-      }
-    ],
-    labels: []
-  };
+<aside class="glossary-panel" id="glossary-panel" aria-label="Bitcoin privacy glossary">
+  <div class="glossary-header">
+    <div>
+      <div class="glossary-title">Bitcoin privacy glossary</div>
+      <div class="glossary-subtitle">Terms used in SiriScore explained plainly.</div>
+    </div>
+    <button class="glossary-close" id="glossary-close" aria-label="Close glossary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
 
-  // ── State ─────────────────────────────────────────────────
-  let activeTab = 'psbt';
-  let currentReport = null;
+  <input class="glossary-search" id="glossary-search" type="text"
+         placeholder="Search terms..." autocomplete="off" spellcheck="false" />
 
-  const PLACEHOLDERS = {
-    psbt:  'cHNidP8BAH0CAAAAAbxLLf9+AYfqfF69QAQuETnL…',
-    rawtx: '0200000001abc123…',
-    txid:  'a4f1c9d2e3b5a6f7…'
-  };
+  <div class="glossary-list" id="glossary-list"></div>
 
-  // ── DOM refs ──────────────────────────────────────────────
-  const txInput       = document.getElementById('tx-input');
-  const btnAnalyse    = document.getElementById('btn-analyse');
-  const errorBanner   = document.getElementById('error-banner');
-  const resultsZone   = document.getElementById('results-zone');
-  const scoreNumber   = document.getElementById('score-number');
-  const verdictPill   = document.getElementById('verdict-pill');
-  const gaugeDot      = document.getElementById('gauge-dot');
-  const metaChips     = document.getElementById('meta-chips');
-  const findingsCount = document.getElementById('findings-count');
-  const findingsList  = document.getElementById('findings-list');
-  const checksCount    = document.getElementById('checks-count');
-  const checksList     = document.getElementById('checks-list');
-  const labelsSection = document.getElementById('labels-section');
-  const labelsList    = document.getElementById('labels-list');
-  const nextList      = document.getElementById('next-list');
-  const btnDownload   = document.getElementById('btn-download');
-  const fileInput     = document.getElementById('file-input');
+  <div class="glossary-empty" id="glossary-empty" style="display:none">
+    No terms match your search.
+  </div>
+</aside>
 
-  // ── Pill tabs ─────────────────────────────────────────────
-  document.querySelectorAll('.pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      activeTab = pill.dataset.tab;
-      txInput.placeholder = PLACEHOLDERS[activeTab];
-    });
-  });
-
-  // ── Hide error banner on input ────────────────────────────
-  txInput.addEventListener('input', () => {
-    errorBanner.style.display = 'none';
-  });
-
-  // ── Import labels ─────────────────────────────────────────
-  document.getElementById('import-labels-btn').addEventListener('click', () => {
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    // Try real API first; fall back silently if backend not running
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch('/labels/import', { method: 'POST', body: form });
-      if (res.ok) {
-        const data = await res.json();
-        alert(`Imported ${data.imported} label(s) from ${file.name}`);
-      }
-    } catch (_) {
-      alert(`Labels file "${file.name}" selected. Connect the API server to persist labels.`);
-    }
-    fileInput.value = '';
-  });
-
-  // ── Analyse ───────────────────────────────────────────────
-  btnAnalyse.addEventListener('click', async () => {
-    const value = txInput.value.trim();
-    errorBanner.style.display = 'none';
-    currentReport = null;
-    resultsZone.classList.remove('visible');
-
-    if (!value) {
-      errorBanner.textContent = 'Please paste a PSBT, raw transaction hex, or txid before analysing.';
-      errorBanner.style.display = 'block';
-      return;
-    }
-
-    btnAnalyse.disabled = true;
-    btnAnalyse.textContent = 'Analysing…';
-
-    let report;
-    try {
-      report = await fetchScore(value, activeTab);
-    } catch (err) {
-      btnAnalyse.disabled = false;
-      btnAnalyse.textContent = 'Analyse Transaction';
-      errorBanner.textContent = 'Error: ' + err.message;
-      errorBanner.style.display = 'block';
-      return;
-    }
-
-    btnAnalyse.disabled = false;
-    btnAnalyse.textContent = 'Analyse Transaction';
-
-    currentReport = report;
-    renderReport(report);
-  });
-
-  // ── Fetch: real API, with mock fallback only for local-file demos ─────
-  async function fetchScore(value, inputType) {
-    validateInput(value, inputType);
-
-    // Try the live backend first
-    try {
-      const res = await fetch('/score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: value, input_type: inputType }),
-        signal: AbortSignal.timeout(30000)
-      });
-      if (res.ok) return await res.json();
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || 'The backend could not parse this input.');
-    } catch (err) {
-      const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
-      const backendUnavailable = timedOut || err.message === 'Failed to fetch';
-      if (!backendUnavailable || window.location.protocol !== 'file:') {
-        if (timedOut) {
-          throw new Error('The backend took too long to review this transaction. Please try again.');
-        }
-        throw err;
-      }
-      // backend not running — fall through to mock
-    }
-
-    // Offline mock (700 ms simulated delay)
-    await delay(700);
-    return value.startsWith('cHNidP8') ? MOCK_GOOD : MOCK_RESULT;
-  }
-
-  function validateInput(value, inputType) {
-    if (inputType === 'txid' && !/^[0-9a-fA-F]{64}$/.test(value)) {
-      throw new Error('Invalid txid. Expected 64 hexadecimal characters.');
-    }
-
-    if (inputType === 'rawtx') {
-      if (!/^[0-9a-fA-F]+$/.test(value) || value.length % 2 !== 0) {
-        throw new Error('Invalid raw transaction hex.');
-      }
-    }
-
-    if (inputType === 'psbt') {
-      try {
-        const bytes = Uint8Array.from(atob(value), c => c.charCodeAt(0));
-        const validMagic = bytes.length >= 5
-          && bytes[0] === 0x70
-          && bytes[1] === 0x73
-          && bytes[2] === 0x62
-          && bytes[3] === 0x74
-          && bytes[4] === 0xff;
-        if (!validMagic) throw new Error();
-      } catch (_) {
-        throw new Error('Invalid PSBT. Expected base64 PSBT data.');
-      }
-    }
-  }
-
-  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  // ── Render ────────────────────────────────────────────────
-  function renderReport(report) {
-    const { score, findings, checks, labels, input_count, output_count, psbt_version } = report;
-
-    // Score + verdict
-    const { label: vLabel, cls: vCls, colour: vColour } = verdictFor(score);
-    scoreNumber.textContent = score;
-    scoreNumber.style.color = vColour;
-    verdictPill.textContent = vLabel;
-    verdictPill.className = 'verdict-pill verdict-' + vCls;
-
-    // Gauge dot
-    gaugeDot.style.left = score + '%';
-    gaugeDot.style.borderColor = vColour;
-
-    // Meta chips
-    metaChips.innerHTML = [
-      chip(input_count + ' input' + (input_count !== 1 ? 's' : '')),
-      chip(output_count + ' output' + (output_count !== 1 ? 's' : '')),
-      chip('PSBT v' + psbt_version)
-    ].join('');
-
-    // Findings
-    findingsCount.textContent = findings.length + ' issue' + (findings.length !== 1 ? 's' : '');
-    const orderedFindings = sortFindings(findings);
-    findingsList.innerHTML = orderedFindings.length > 0
-      ? orderedFindings.map(renderFinding).join('')
-      : renderNoFindings();
-
-    // Checks
-    const orderedChecks = sortChecks(checks || checksFromFindings(findings));
-    checksCount.textContent = orderedChecks.length + ' checks';
-    checksList.innerHTML = orderedChecks.map(renderCheck).join('');
-
-    // Coin labels
-    if (labels && labels.length > 0) {
-      labelsSection.style.display = 'block';
-      labelsList.innerHTML = labels.map(renderLabel).join('');
-    } else {
-      labelsSection.style.display = 'none';
-    }
-
-    // What to do next (critical first, then warnings, max 3)
-    const ordered = orderedFindings.slice(0, 3);
-    nextList.innerHTML = ordered
-      .map(f => `<li>${escHtml(f.suggestion)}</li>`)
-      .join('') || '<li>No immediate action needed.</li>';
-
-    // Show
-    resultsZone.classList.add('visible');
-    resultsZone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function verdictFor(score) {
-    if (score >= 70) return { label: 'Good',  cls: 'good',  colour: 'var(--green)' };
-    if (score >= 40) return { label: 'Fair',  cls: 'fair',  colour: 'var(--amber)' };
-    return             { label: 'Poor',  cls: 'poor',  colour: 'var(--red)'   };
-  }
-
-  function chip(text) {
-    return `<span class="chip">${escHtml(text)}</span>`;
-  }
-
-  function sortFindings(findings) {
-    const rank = { critical: 0, warning: 1, info: 2 };
-    return [...findings].sort((a, b) => {
-      const severityDelta = (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3);
-      return severityDelta || String(a.id).localeCompare(String(b.id));
-    });
-  }
-
-  function renderNoFindings() {
-    return '<div class="no-findings">No issues found</div>';
-  }
-
-  function renderFinding(f) {
-    const sev = f.severity.toLowerCase();
-    return `
-      <div class="finding-card ${sev}">
-        <div class="finding-row1">
-          <span class="severity-badge ${sev}">${escHtml(f.severity.toUpperCase())}</span>
-          <span class="heuristic-id">${escHtml(f.id)}</span>
-        </div>
-        <div class="finding-title">${escHtml(f.title)}</div>
-        <div class="finding-detail">${escHtml(f.detail)}</div>
-        <div class="finding-suggestion">&rarr; ${escHtml(f.suggestion)}</div>
-      </div>`;
-  }
-
-  function sortChecks(checks) {
-    const statusRank = { fail: 0, unavailable: 1, pass: 2 };
-    const severityRank = { critical: 0, warning: 1, info: 2 };
-    return [...checks].sort((a, b) => {
-      const statusDelta = (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3);
-      if (statusDelta) return statusDelta;
-      const severityDelta = (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3);
-      return severityDelta || String(a.id).localeCompare(String(b.id));
-    });
-  }
-
-  function checksFromFindings(findings) {
-    return findings.map(f => ({
-      id: f.id,
-      severity: f.severity,
-      title: f.title,
-      status: 'fail',
-      reason: ''
-    }));
-  }
-
-  function renderCheck(c) {
-    const status = c.status || 'unavailable';
-    return `
-      <div class="check-row ${escHtml(status)}">
-        <span class="check-id">${escHtml(c.id)}</span>
-        <div class="check-title">
-          <div class="check-name">${escHtml(c.title)}</div>
-          ${c.reason ? `<div class="check-reason">${escHtml(c.reason)}</div>` : ''}
-        </div>
-        <span class="check-status ${escHtml(status)}">${escHtml(status)}</span>
-      </div>`;
-  }
-
-  function renderLabel(l) {
-    const taintedAndActive = l.tag === 'tainted' && l.in_inputs;
-    return `
-      <div class="label-row${taintedAndActive ? ' tainted-active' : ''}">
-        <div class="label-row-inner">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-            <line x1="7" y1="7" x2="7.01" y2="7"/>
-          </svg>
-          <span class="label-utxo mono">${escHtml(l.short_id || shortId(l.txid, l.vout))}</span>
-          <span class="label-text">${escHtml(l.label)}</span>
-          <span class="tag-pill ${escHtml(l.tag)}">${escHtml(l.tag)}</span>
-        </div>
-        ${taintedAndActive ? `<div class="label-taint-warning">This UTXO is flagged as tainted and is included in your transaction inputs.</div>` : ''}
-      </div>`;
-  }
-
-  function shortId(txid, vout) {
-    return txid.slice(0, 8) + '…' + txid.slice(-4) + ':' + vout;
-  }
-
-  // ── Download report ───────────────────────────────────────
-  btnDownload.addEventListener('click', () => {
-    if (!currentReport) return;
-    const r = currentReport;
-    const { label: vLabel } = verdictFor(r.score);
-    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-
-    let txt = `SiriScore Privacy Report\n`;
-    txt += `========================\n`;
-    txt += `Score: ${r.score}/100 (${vLabel})\n`;
-    txt += `Inputs: ${r.input_count} | Outputs: ${r.output_count} | PSBT v${r.psbt_version}\n`;
-    txt += `Generated: ${now}\n\n`;
-
-    txt += `FINDINGS\n--------\n`;
-    const reportFindings = sortFindings(r.findings);
-    if (reportFindings.length === 0) {
-      txt += `No issues found\n\n`;
-    }
-    for (const f of reportFindings) {
-      txt += `[${f.severity.toUpperCase()}] ${f.id} — ${f.title}\n`;
-      txt += `${f.detail}\n`;
-      txt += `Fix: ${f.suggestion}\n\n`;
-    }
-
-    txt += `CHECKS\n------\n`;
-    const reportChecks = sortChecks(r.checks || checksFromFindings(r.findings));
-    for (const c of reportChecks) {
-      txt += `[${c.status.toUpperCase()}] ${c.id} — ${c.title}`;
-      if (c.reason) txt += ` (${c.reason})`;
-      txt += `\n`;
-    }
-    txt += '\n';
-
-    if (r.labels && r.labels.length > 0) {
-      txt += `COIN LABELS\n-----------\n`;
-      for (const l of r.labels) {
-        const sid = l.short_id || shortId(l.txid, l.vout);
-        txt += `${sid}  ${l.label}  [${l.tag}]\n`;
-      }
-      txt += '\n';
-    }
-
-    txt += `WHAT TO DO NEXT\n---------------\n`;
-    const ordered = reportFindings.slice(0, 3);
-    ordered.forEach((f, i) => { txt += `${i + 1}. ${f.suggestion}\n`; });
-    if (ordered.length === 0) txt += `No immediate action needed.\n`;
-
-    const blob = new Blob([txt], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'siriscore-report.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // ── Util ──────────────────────────────────────────────────
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-</script>
+<script src="app.js"></script>
 </body>
 </html>

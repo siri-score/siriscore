@@ -16,8 +16,10 @@ scorer/heuristics/h5_consolidation.py
 scorer/heuristics/h6_dust.py
 scorer/heuristics/h7_bip69.py
 scorer/heuristics/h8_tainted_label.py
+tests/test_checks.py
 tests/test_heuristics.py
 tests/test_labels.py
+tests/test_lookup.py
 tests/test_parser.py
 utxo_privacy_scorer.egg-info/PKG-INFO
 utxo_privacy_scorer.egg-info/SOURCES.txt

@@ -3,7 +3,7 @@ from scorer.parser import parse
 from scorer.parser import parse_as
 from scorer.report import Report, Finding, Severity, Check
 from scorer.labels import init_db, import_sparrow
-from scorer.heuristics import ALL as _HEURISTICS
+from scorer.heuristics import LOCAL as _LOCAL, NETWORK as _NETWORK
 from scorer.heuristics.h1_script_mismatch import classify_script
 
 _H8_SCORE_CAP = 40
@@ -19,22 +19,30 @@ _HEURISTIC_DEFS = [
     ("H8", Severity.CRITICAL, "Labelled tainted UTXO in inputs"),
 ]
 
-
-def score(input_str: str) -> Report:
-    """Score a PSBT (base64), raw tx hex, or txid. Returns a Report."""
-    return _score_parsed(*parse(input_str))
+_NETWORK_IDS = {"H3", "H4"}
 
 
-def score_as(input_str: str, input_type: str) -> Report:
+def score(input_str: str, lookup: bool = False) -> Report:
+    """Score a PSBT (base64), raw tx hex, or txid.
+
+    lookup=False (default): H1,H2,H5,H6,H7,H8 — zero network calls, nothing leaves your machine.
+    lookup=True: also runs H3 (address reuse) and H4 (UTXO age) via mempool.space.
+    """
+    return _score_parsed(*parse(input_str), lookup=lookup)
+
+
+def score_as(input_str: str, input_type: str, lookup: bool = False) -> Report:
     """Score input using an explicit type: psbt, rawtx, or txid."""
-    return _score_parsed(*parse_as(input_str, input_type))
+    return _score_parsed(*parse_as(input_str, input_type), lookup=lookup)
 
 
-def _score_parsed(tx, psbt_meta) -> Report:
+def _score_parsed(tx, psbt_meta, lookup: bool = False) -> Report:
     init_db()
 
+    heuristics = _LOCAL + (_NETWORK if lookup else [])
+
     findings = []
-    for module in _HEURISTICS:
+    for module in heuristics:
         result = module.check(tx, psbt_meta)
         if result is not None:
             findings.append(result)
@@ -43,7 +51,7 @@ def _score_parsed(tx, psbt_meta) -> Report:
 
     tainted = any(f.heuristic_id == "H8" for f in findings)
     final_score = min(raw_score, _H8_SCORE_CAP) if tainted else raw_score
-    checks = _build_checks(tx, findings)
+    checks = _build_checks(tx, findings, lookup)
 
     return Report(
         score=final_score,
@@ -61,7 +69,7 @@ def import_labels(json_path: str, source: str = "sparrow") -> int:
     return import_sparrow(json_path)
 
 
-def _build_checks(tx, findings: list[Finding]) -> list[Check]:
+def _build_checks(tx, findings: list[Finding], lookup: bool) -> list[Check]:
     findings_by_id = {f.heuristic_id: f for f in findings}
     checks = []
 
@@ -69,6 +77,14 @@ def _build_checks(tx, findings: list[Finding]) -> list[Check]:
         finding = findings_by_id.get(heuristic_id)
         if finding is not None:
             checks.append(Check(heuristic_id, finding.severity, finding.title, "fail"))
+            continue
+
+        if heuristic_id in _NETWORK_IDS and not lookup:
+            reason = _unavailable_reason(heuristic_id, tx)
+            if reason:
+                checks.append(Check(heuristic_id, severity, title, "unavailable", reason))
+            else:
+                checks.append(Check(heuristic_id, severity, title, "skipped", "Pass lookup=True to enable network checks"))
             continue
 
         reason = _unavailable_reason(heuristic_id, tx)
@@ -89,6 +105,9 @@ def _unavailable_reason(heuristic_id: str, tx) -> str:
 
     if heuristic_id == "H3" and not any(getattr(i, "address", None) for i in tx.inputs):
         return "Input addresses unavailable"
+
+    if heuristic_id == "H4" and not any(getattr(i, "script_pubkey", None) for i in tx.inputs):
+        return "Input prevout data unavailable"
 
     if heuristic_id == "H6" and not any(getattr(i, "value", None) is not None for i in tx.inputs):
         return "Input values unavailable"
