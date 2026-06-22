@@ -108,6 +108,8 @@ def test_psbt_input_detected_and_prevout_applied():
     assert len(tx.inputs) == 1
     assert tx.inputs[0].value == 5000
     assert tx.inputs[0].script_pubkey.hex() == P2WPKH_SCRIPT
+    assert tx.inputs[0].address
+    assert tx.inputs[0].address.startswith("bc1q")
 
 
 def test_txid_dispatches_to_lookup(monkeypatch):

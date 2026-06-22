@@ -45,6 +45,12 @@ def main():
     parser.add_argument("--import-sparrow", metavar="JSON_PATH")
     parser.add_argument("--fail-below", type=int, metavar="SCORE")
     parser.add_argument("--json", action="store_true", dest="json_output")
+    parser.add_argument("--lookup", action="store_true",
+                        help="Enable H3+H4 via mempool.space (network calls)")
+    parser.add_argument("--rpc-url", metavar="URL",
+                        help="Bitcoin Core RPC endpoint (enables H4 via node)")
+    parser.add_argument("--rpc-user", metavar="USER", help="Bitcoin Core RPC username")
+    parser.add_argument("--rpc-password", metavar="PASSWORD", help="Bitcoin Core RPC password")
     args = parser.parse_args()
 
     if args.import_sparrow:
@@ -52,8 +58,21 @@ def main():
         console.print(f"Imported {n} labels from {args.import_sparrow}")
 
     input_str = args.psbt or args.rawtx or args.txid
+    if args.rpc_url:
+        lookup_arg = "rpc"
+    elif args.lookup:
+        lookup_arg = True
+    else:
+        lookup_arg = False
+
     try:
-        report = score(input_str)
+        report = score(
+            input_str,
+            lookup=lookup_arg,
+            rpc_url=args.rpc_url,
+            rpc_user=args.rpc_user,
+            rpc_password=args.rpc_password,
+        )
     except ValueError as exc:
         if args.json_output:
             print(json.dumps({"error": str(exc)}, indent=2))

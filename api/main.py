@@ -6,7 +6,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import tempfile, os
+import tempfile
+import os
 
 from scorer import score_as as _score_as, import_labels
 from scorer.labels import get_all_labels, add_label, init_db
@@ -86,7 +87,7 @@ def score_tx(req: ScoreRequest):
             }
             for c in report.checks
         ],
-        "labels": get_all_labels(),
+        "labels": report.labels,
     }
 
 
@@ -100,6 +101,14 @@ async def import_labels_endpoint(file: UploadFile = File(...)):
         n = import_labels(tmp_path)
     finally:
         os.unlink(tmp_path)
+    if n == 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No labels were imported. Expected Sparrow/BIP329 JSONL records "
+                "or legacy {'txid:vout': 'label'} JSON."
+            ),
+        )
     return {"imported": n}
 
 

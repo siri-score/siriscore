@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 from scorer.lookup import get_tx, get_tx_hex
 
+_BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+_BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+
 
 @dataclass
 class TxInput:
@@ -180,6 +183,7 @@ def _apply_psbt_input_utxo(txin: TxInput, input_map: list[tuple[bytes, bytes]]) 
             txout = _read_txout(_Reader(value))
             txin.value = txout.value
             txin.script_pubkey = txout.script_pubkey
+            txin.address = script_to_address(txout.script_pubkey)
             return
         if key_type == 0x00:
             prev_tx, _ = _parse_rawtx(value.hex(), enrich_prevouts=False)
@@ -187,6 +191,7 @@ def _apply_psbt_input_utxo(txin: TxInput, input_map: list[tuple[bytes, bytes]]) 
                 prevout = prev_tx.outputs[txin.vout]
                 txin.value = prevout.value
                 txin.script_pubkey = prevout.script_pubkey
+                txin.address = script_to_address(prevout.script_pubkey)
 
 
 def _enrich_prevouts(tx: ParsedTx) -> None:
@@ -207,6 +212,7 @@ def _enrich_prevouts(tx: ParsedTx) -> None:
         prevout = prev_tx.outputs[txin.vout]
         txin.value = prevout.value
         txin.script_pubkey = prevout.script_pubkey
+        txin.address = script_to_address(prevout.script_pubkey)
 
 
 def _apply_mempool_prevouts(tx: ParsedTx, tx_json: dict) -> None:
@@ -222,6 +228,83 @@ def _apply_mempool_prevouts(tx: ParsedTx, tx_json: dict) -> None:
                 pass
         if "scriptpubkey_address" in prevout:
             txin.address = prevout["scriptpubkey_address"]
+        elif txin.script_pubkey:
+            txin.address = script_to_address(txin.script_pubkey)
+
+
+def script_to_address(script_pubkey: bytes) -> str | None:
+    script = bytes(script_pubkey or b"")
+    if len(script) == 25 and script[:3] == b"\x76\xa9\x14" and script[-2:] == b"\x88\xac":
+        return _base58check(b"\x00" + script[3:23])
+    if len(script) == 23 and script[:2] == b"\xa9\x14" and script[-1:] == b"\x87":
+        return _base58check(b"\x05" + script[2:22])
+    if len(script) == 22 and script[:2] == b"\x00\x14":
+        return _bech32_encode("bc", 0, script[2:])
+    if len(script) == 34 and script[:2] == b"\x00\x20":
+        return _bech32_encode("bc", 0, script[2:])
+    if len(script) == 34 and script[:2] == b"\x51\x20":
+        return _bech32_encode("bc", 1, script[2:])
+    return None
+
+
+def _base58check(payload: bytes) -> str:
+    import hashlib
+
+    checksum = hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
+    data = payload + checksum
+    num = int.from_bytes(data, "big")
+    encoded = ""
+    while num:
+        num, rem = divmod(num, 58)
+        encoded = _BASE58_ALPHABET[rem] + encoded
+    leading_zeroes = len(data) - len(data.lstrip(b"\x00"))
+    return "1" * leading_zeroes + encoded
+
+
+def _bech32_encode(hrp: str, witness_version: int, witness_program: bytes) -> str:
+    spec = "bech32" if witness_version == 0 else "bech32m"
+    data = [witness_version] + _convertbits(witness_program, 8, 5)
+    checksum = _bech32_create_checksum(hrp, data, spec)
+    return hrp + "1" + "".join(_BECH32_CHARSET[d] for d in data + checksum)
+
+
+def _bech32_create_checksum(hrp: str, data: list[int], spec: str) -> list[int]:
+    const = 1 if spec == "bech32" else 0x2BC830A3
+    values = _bech32_hrp_expand(hrp) + data
+    polymod = _bech32_polymod(values + [0, 0, 0, 0, 0, 0]) ^ const
+    return [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+
+
+def _bech32_hrp_expand(hrp: str) -> list[int]:
+    return [ord(x) >> 5 for x in hrp] + [0] + [ord(x) & 31 for x in hrp]
+
+
+def _bech32_polymod(values: list[int]) -> int:
+    generators = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3]
+    chk = 1
+    for value in values:
+        top = chk >> 25
+        chk = (chk & 0x1FFFFFF) << 5 ^ value
+        for i, generator in enumerate(generators):
+            if (top >> i) & 1:
+                chk ^= generator
+    return chk
+
+
+def _convertbits(data: bytes, from_bits: int, to_bits: int) -> list[int]:
+    acc = 0
+    bits = 0
+    ret = []
+    maxv = (1 << to_bits) - 1
+    for value in data:
+        acc = (acc << from_bits) | value
+        bits += from_bits
+        while bits >= to_bits:
+            bits -= to_bits
+            ret.append((acc >> bits) & maxv)
+    if bits:
+        ret.append((acc << (to_bits - bits)) & maxv)
+    return ret
 
 
 def _read_txout(reader: "_Reader") -> TxOutput:

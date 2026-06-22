@@ -37,3 +37,4 @@ class Report:
     output_count: int
     psbt_version: int
     warnings: List[str] = field(default_factory=list)
+    labels: List[dict] = field(default_factory=list)

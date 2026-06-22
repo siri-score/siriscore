@@ -125,3 +125,73 @@ class TestH4UtxoAge:
 
         assert h4_utxo_age.check(_tx(inputs=inputs), {}) is None
         assert len(calls) == h4_utxo_age.MAX_UTXO_HEIGHT_LOOKUPS
+
+
+class TestH8TaintedLabel:
+    def test_fires_on_exact_utxo_label(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h8_tainted_label import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_utxo_label("e" * 64, 1, "Specific labelled coin", "tainted")
+
+        inp = MagicMock(txid="e" * 64, vout=1, address=None)
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H8"
+
+    def test_fires_on_address_label(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h8_tainted_label import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_address_label("bc1qtainted", "Tainted receive address", "tainted")
+
+        inp = MagicMock(txid="a" * 64, vout=0, address="bc1qtainted")
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H8"
+
+    def test_fires_on_transaction_label(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h8_tainted_label import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_transaction_label("b" * 64, "Tainted transaction", "tainted")
+
+        inp = MagicMock(txid="b" * 64, vout=0, address=None)
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H8"
+
+    def test_fires_on_untagged_sparrow_label(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h8_tainted_label import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_address_label("bc1qlabelled", "Sparrow address label")
+
+        inp = MagicMock(txid="c" * 64, vout=0, address="bc1qlabelled")
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H8"
+
+    def test_clean_label_does_not_fire(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h8_tainted_label import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_address_label("bc1qclean", "Clean cold storage", "clean")
+
+        inp = MagicMock(txid="d" * 64, vout=0, address="bc1qclean")
+
+        assert check(_tx(inputs=[inp]), {}) is None

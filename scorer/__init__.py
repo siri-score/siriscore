@@ -3,6 +3,7 @@ from scorer.parser import parse
 from scorer.parser import parse_as
 from scorer.report import Report, Finding, Severity, Check
 from scorer.labels import init_db, import_sparrow
+from scorer.labels import get_input_label
 from scorer.heuristics import LOCAL as _LOCAL, NETWORK as _NETWORK
 from scorer.heuristics.h1_script_mismatch import classify_script
 
@@ -22,28 +23,58 @@ _HEURISTIC_DEFS = [
 _NETWORK_IDS = {"H3", "H4"}
 
 
-def score(input_str: str, lookup: bool = False) -> Report:
+def score(
+    input_str: str,
+    lookup: bool | str = False,
+    rpc_url: str | None = None,
+    rpc_user: str | None = None,
+    rpc_password: str | None = None,
+) -> Report:
     """Score a PSBT (base64), raw tx hex, or txid.
 
-    lookup=False (default): H1,H2,H5,H6,H7,H8 — zero network calls, nothing leaves your machine.
-    lookup=True: also runs H3 (address reuse) and H4 (UTXO age) via mempool.space.
+    lookup=False (default): H1,H2,H5,H6,H7,H8 — zero network calls.
+    lookup=True or lookup="mempool": also runs H3+H4 via mempool.space/blockstream.
+    lookup="rpc": runs H4 via Bitcoin Core RPC; H3 skipped (no non-wallet address index).
+      Requires rpc_url; rpc_user/rpc_password optional if node has no auth.
     """
-    return _score_parsed(*parse(input_str), lookup=lookup)
+    backend = _make_backend(lookup, rpc_url, rpc_user, rpc_password)
+    run_network = bool(lookup) or (backend is not None)
+    return _score_parsed(*parse(input_str), lookup=run_network, backend=backend)
 
 
-def score_as(input_str: str, input_type: str, lookup: bool = False) -> Report:
+def score_as(
+    input_str: str,
+    input_type: str,
+    lookup: bool | str = False,
+    rpc_url: str | None = None,
+    rpc_user: str | None = None,
+    rpc_password: str | None = None,
+) -> Report:
     """Score input using an explicit type: psbt, rawtx, or txid."""
-    return _score_parsed(*parse_as(input_str, input_type), lookup=lookup)
+    backend = _make_backend(lookup, rpc_url, rpc_user, rpc_password)
+    run_network = bool(lookup) or (backend is not None)
+    return _score_parsed(*parse_as(input_str, input_type), lookup=run_network, backend=backend)
 
 
-def _score_parsed(tx, psbt_meta, lookup: bool = False) -> Report:
+def _make_backend(lookup, rpc_url, rpc_user, rpc_password):
+    if lookup == "rpc":
+        if not rpc_url:
+            raise ValueError("lookup='rpc' requires rpc_url")
+        from scorer.rpc import RPCBackend
+        return RPCBackend(url=rpc_url, user=rpc_user or "", password=rpc_password or "")
+    return None
+
+
+def _score_parsed(tx, psbt_meta, lookup: bool = False, backend=None) -> Report:
     init_db()
 
     heuristics = _LOCAL + (_NETWORK if lookup else [])
 
+    meta = {**psbt_meta, "_backend": backend} if backend is not None else psbt_meta
+
     findings = []
     for module in heuristics:
-        result = module.check(tx, psbt_meta)
+        result = module.check(tx, meta)
         if result is not None:
             findings.append(result)
 
@@ -51,7 +82,8 @@ def _score_parsed(tx, psbt_meta, lookup: bool = False) -> Report:
 
     tainted = any(f.heuristic_id == "H8" for f in findings)
     final_score = min(raw_score, _H8_SCORE_CAP) if tainted else raw_score
-    checks = _build_checks(tx, findings, lookup)
+    labels = _input_labels(tx)
+    checks = _build_checks(tx, findings, lookup, backend)
 
     return Report(
         score=final_score,
@@ -60,6 +92,7 @@ def _score_parsed(tx, psbt_meta, lookup: bool = False) -> Report:
         input_count=len(tx.inputs),
         output_count=len(tx.outputs),
         psbt_version=psbt_meta.get("version", 0),
+        labels=labels,
     )
 
 
@@ -69,8 +102,10 @@ def import_labels(json_path: str, source: str = "sparrow") -> int:
     return import_sparrow(json_path)
 
 
-def _build_checks(tx, findings: list[Finding], lookup: bool) -> list[Check]:
+def _build_checks(tx, findings: list[Finding], lookup: bool, backend=None) -> list[Check]:
     findings_by_id = {f.heuristic_id: f for f in findings}
+    # True when backend is an RPC node that has no non-wallet address index.
+    no_address_index = backend is not None and not getattr(backend, "HAS_ADDRESS_INDEX", True)
     checks = []
 
     for heuristic_id, severity, title in _HEURISTIC_DEFS:
@@ -84,7 +119,14 @@ def _build_checks(tx, findings: list[Finding], lookup: bool) -> list[Check]:
             if reason:
                 checks.append(Check(heuristic_id, severity, title, "unavailable", reason))
             else:
-                checks.append(Check(heuristic_id, severity, title, "skipped", "Pass lookup=True to enable network checks"))
+                checks.append(Check(heuristic_id, severity, title, "skipped",
+                    "Pass lookup=True or --rpc-url to enable network checks"))
+            continue
+
+        # H3 requires an address-history index not available via non-wallet RPC.
+        if heuristic_id == "H3" and no_address_index:
+            checks.append(Check(heuristic_id, severity, title, "unavailable",
+                "Address history unavailable via non-wallet RPC — use mempool backend for H3"))
             continue
 
         reason = _unavailable_reason(heuristic_id, tx)
@@ -113,3 +155,21 @@ def _unavailable_reason(heuristic_id: str, tx) -> str:
         return "Input values unavailable"
 
     return ""
+
+
+def _input_labels(tx) -> list[dict]:
+    labels = []
+    seen = set()
+    for txin in tx.inputs:
+        record = get_input_label(txin.txid, txin.vout, txin.address)
+        if record is None:
+            continue
+        key = (record.get("label_type"), record.get("ref"), record.get("txid"), record.get("vout"), record.get("address"))
+        if key in seen:
+            continue
+        seen.add(key)
+        enriched = dict(record)
+        enriched["in_inputs"] = True
+        enriched["matched_input"] = f"{txin.txid}:{txin.vout}"
+        labels.append(enriched)
+    return labels
