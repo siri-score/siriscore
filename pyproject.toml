@@ -3,30 +3,46 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "utxo-privacy-scorer"
+name = "siriscore"
 version = "0.1.0"
 description = "Pre-broadcast Bitcoin transaction privacy scorer"
 readme = "README.md"
-requires-python = ">=3.11"
 license = { text = "MIT" }
+authors = [
+  { name = "Nkatha Kaburu", email = "nkathakaburu0@gmail.com" }
+]
+requires-python = ">=3.11"
+keywords = ["bitcoin", "privacy", "psbt", "transaction", "chain-analysis"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Security",
+]
 dependencies = [
-    "python-bitcoinlib>=0.12",
-    "requests>=2.28",
-    "rich>=13.0",
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
-    "python-multipart>=0.0.9",
+  "python-bitcoinlib>=0.12",
+  "requests>=2.28",
+  "rich>=13.0",
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.29",
+  "python-multipart>=0.0.9",
 ]
 
+[project.urls]
+Homepage = "https://github.com/nkatha23/siriscore"
+Repository = "https://github.com/nkatha23/siriscore"
+
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov", "httpx"]
+dev = ["pytest>=8", "pytest-cov", "ruff", "mypy", "build", "twine", "httpx"]
 
 [project.scripts]
 btc-privacy-check = "cli:main"
+siriscore = "cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["scorer*", "api*"]
+include = ["scorer*", "api*", "siriscore*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
