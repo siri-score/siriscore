@@ -29,7 +29,7 @@ body {
   font-family: 'Inter', sans-serif;
   background: var(--bg);
   color: var(--text-primary);
-  padding-top: 56px;
+  padding-top: 88px;
 }
 
 .mono { font-family: 'JetBrains Mono', monospace; }
@@ -38,47 +38,41 @@ body {
 header {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;
+  height: 88px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 32px;
   z-index: 100;
 }
 
 .wordmark {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-decoration: none;
 }
 
 .wordmark-icon {
-  width: 28px; height: 28px;
-  background: var(--orange);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  height: 68px;
+  width: auto;
+  display: block;
   flex-shrink: 0;
 }
 
-.wordmark-icon svg { width: 14px; height: 14px; }
-
-.wordmark-text {
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1;
+.wordmark-name {
+  height: 44px;
+  width: auto;
+  display: block;
 }
-
-.wordmark-text .siri { color: var(--orange); }
-.wordmark-text .score-part { color: var(--text-primary); }
 
 .nav-links { display: flex; gap: 20px; }
 
 .nav-links a {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
   transition: color 150ms;
