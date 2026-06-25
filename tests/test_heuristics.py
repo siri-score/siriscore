@@ -96,6 +96,64 @@ class TestH3AddressReuse:
         assert h3_address_reuse.check(_tx(inputs=inputs), {}) is None
         assert len(calls) == h3_address_reuse.MAX_ADDRESS_LOOKUPS
 
+    def test_generic_sp_suggestion_without_sp_output(self, monkeypatch):
+        from scorer.heuristics import h3_address_reuse
+
+        monkeypatch.setattr(h3_address_reuse, "get_address_txs", lambda addr: ["tx1", "tx2"])
+        monkeypatch.setattr(h3_address_reuse, "script_to_address", lambda spk: "bc1qregular")
+
+        inp = MagicMock(address="bc1qreused")
+        out = MagicMock(script_pubkey=b"\x00\x14" + b"\x11" * 20)
+
+        finding = h3_address_reuse.check(_tx(inputs=[inp], outputs=[out]), {})
+
+        assert finding is not None
+        assert "Consider requesting a silent payment address" in finding.suggestion
+
+    def test_sp_aware_suggestion_with_sp1q_output(self, monkeypatch):
+        from scorer.heuristics import h3_address_reuse
+
+        monkeypatch.setattr(h3_address_reuse, "get_address_txs", lambda addr: ["tx1", "tx2"])
+        monkeypatch.setattr(h3_address_reuse, "script_to_address", lambda spk: "sp1qrecipient")
+
+        inp = MagicMock(address="bc1qreused")
+        out = MagicMock(script_pubkey=b"\x51\x20" + b"\x22" * 32)
+
+        finding = h3_address_reuse.check(_tx(inputs=[inp], outputs=[out]), {})
+
+        assert finding is not None
+        assert "Recipient supports silent payments" in finding.suggestion
+
+    def test_sp_aware_suggestion_with_tsp1q_regtest_output(self, monkeypatch):
+        from scorer.heuristics import h3_address_reuse
+
+        monkeypatch.setattr(h3_address_reuse, "get_address_txs", lambda addr: ["tx1", "tx2"])
+        monkeypatch.setattr(h3_address_reuse, "script_to_address", lambda spk: "tsp1qrecipient")
+
+        inp = MagicMock(address="bcrt1qreused")
+        out = MagicMock(script_pubkey=b"\x51\x20" + b"\x22" * 32)
+
+        finding = h3_address_reuse.check(_tx(inputs=[inp], outputs=[out]), {})
+
+        assert finding is not None
+        assert "Recipient supports silent payments" in finding.suggestion
+
+
+class TestIsSilentPaymentAddress:
+    def test_mainnet_sp_address(self):
+        from scorer.utils import is_silent_payment_address
+        assert is_silent_payment_address("sp1qrecipientaddress") is True
+
+    def test_testnet_regtest_address(self):
+        from scorer.utils import is_silent_payment_address
+        assert is_silent_payment_address("tsp1qrecipientaddress") is True
+
+    def test_non_sp_addresses(self):
+        from scorer.utils import is_silent_payment_address
+        assert is_silent_payment_address("bc1qaddress") is False
+        assert is_silent_payment_address("bcrt1paddress") is False
+        assert is_silent_payment_address("") is False
+
 
 class TestH4UtxoAge:
     def test_skips_lookup_failures(self, monkeypatch):
