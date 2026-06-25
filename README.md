@@ -15,17 +15,13 @@ Pre-broadcast Bitcoin transaction privacy analysis. Accepts a PSBT, raw tx hex, 
 
 ## Installation
 
-### From TestPyPI (current release)
+### From PyPI
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ \
-            siriscore
+pip install siriscore
 ```
 
-Package page: [https://test.pypi.org/project/siriscore/0.1.0/](https://test.pypi.org/project/siriscore/0.1.0/)
-
-The `--extra-index-url pypi.org` flag lets pip pull the runtime dependencies (fastapi, rich, requests, etc.) from the main PyPI index, since they are not mirrored on TestPyPI.
+Package page: [https://pypi.org/project/siriscore/](https://pypi.org/project/siriscore/)
 
 ### From source (development)
 
