@@ -123,6 +123,17 @@ def create_label(req: LabelRequest):
     return {"ok": True}
 
 
+SCORER_DIR = Path(__file__).parent.parent / "scorer"
+
+
+@app.get("/scorer-src/{path:path}")
+def serve_scorer_src(path: str):
+    src = (SCORER_DIR / path).resolve()
+    if not str(src).startswith(str(SCORER_DIR.resolve())) or src.suffix != ".py" or not src.exists():
+        raise HTTPException(status_code=404)
+    return FileResponse(src, media_type="text/plain")
+
+
 @app.get("/")
 def serve_index():
     return FileResponse(WEB_DIR / "index.html")

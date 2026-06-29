@@ -75,6 +75,8 @@ const MOCK_GOOD = {
 // ── State ────────────────────────────────────────────────────
 let activeTab = 'psbt';
 let currentReport = null;
+let pyodide = null;
+let pyodideReady = false;
 
 const PLACEHOLDERS = {
   psbt:  'cHNidP8BAH0CAAAAAbxLLf9+AYfqfF69QAQuETnL…',
@@ -82,6 +84,7 @@ const PLACEHOLDERS = {
   txid:  'a4f1c9d2e3b5a6f7…'
 };
 
+const CAPTION_PYODIDE   = 'Running in your browser. Your PSBT never leaves this tab.';
 const CAPTION_LOOKUP    = 'Input addresses are looked up via mempool.space. Your PSBT is never transmitted.';
 const CAPTION_NO_LOOKUP = 'Network checks disabled. No data leaves your machine.';
 
@@ -108,6 +111,10 @@ const privacyCaption  = document.getElementById('privacy-caption');
 
 // ── Caption ──────────────────────────────────────────────────
 function updateCaption() {
+  if (pyodideReady) {
+    privacyCaption.textContent = CAPTION_PYODIDE;
+    return;
+  }
   privacyCaption.textContent = networkCheckbox.checked ? CAPTION_LOOKUP : CAPTION_NO_LOOKUP;
 }
 networkCheckbox.addEventListener('change', updateCaption);
@@ -189,9 +196,155 @@ btnAnalyse.addEventListener('click', async () => {
   renderReport(report);
 });
 
+// ── Pyodide ───────────────────────────────────────────────────
+async function initPyodide() {
+  try {
+    pyodide = await loadPyodide();
+
+    // Inject scorer source files directly into Pyodide's virtual filesystem.
+    // scorer is pure Python (stdlib only) so no micropip or wheel is needed.
+    const scorerFiles = [
+      '__init__.py',
+      'report.py',
+      'parser.py',
+      'lookup.py',
+      'labels.py',
+      'rpc.py',
+      'heuristics/__init__.py',
+      'heuristics/h1_script_mismatch.py',
+      'heuristics/h2_round_amount.py',
+      'heuristics/h3_address_reuse.py',
+      'heuristics/h4_utxo_age.py',
+      'heuristics/h5_consolidation.py',
+      'heuristics/h6_dust.py',
+      'heuristics/h7_bip69.py',
+      'heuristics/h8_tainted_label.py',
+    ];
+
+    // sqlite3 is unvendored from Pyodide's stdlib — must be loaded before scorer imports it
+    await pyodide.loadPackage('sqlite3');
+
+    pyodide.FS.mkdir('scorer');
+    pyodide.FS.mkdir('scorer/heuristics');
+
+    for (const file of scorerFiles) {
+      const res = await fetch(`/scorer-src/${file}`);
+      if (!res.ok) throw new Error(`Failed to fetch scorer/${file}: HTTP ${res.status}`);
+      pyodide.FS.writeFile(`scorer/${file}`, await res.text());
+    }
+
+    pyodide.runPython(`
+      from scorer import score_as as _score_as
+      import scorer.heuristics.h3_address_reuse as _h3
+      import scorer.heuristics.h4_utxo_age as _h4
+      import json as _json
+    `);
+    pyodideReady = true;
+    updateCaption();
+  } catch (e) {
+    console.warn('Pyodide unavailable, falling back to server:', e);
+  }
+}
+
+async function scoreViaPyodide(value, inputType, lookup) {
+  const addrTxs = {};
+  const heights = {};
+
+  if (lookup) {
+    // Parse offline to extract input addresses and txids for H3/H4 pre-fetch
+    let addresses = [], txids = [];
+    try {
+      const parsed = JSON.parse(pyodide.runPython(`
+        try:
+          from scorer.parser import parse_as as _p
+          tx = _p(${JSON.stringify(value)}, ${JSON.stringify(inputType)})
+          _json.dumps({
+            'addresses': [i.address for i in tx.inputs if i.address],
+            'txids': list({i.txid for i in tx.inputs})
+          })
+        except Exception:
+          '{"addresses":[],"txids":[]}'
+      `));
+      addresses = parsed.addresses;
+      txids     = parsed.txids;
+    } catch (_) {}
+
+    // H3 — fetch address tx history directly from mempool.space (browser, no proxy)
+    for (const addr of addresses.slice(0, 5)) {
+      try {
+        const res = await fetch(
+          `https://mempool.space/api/address/${addr}/txs`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (res.ok) addrTxs[addr] = await res.json();
+      } catch (_) {}
+    }
+
+    // H4 — fetch block heights directly from mempool.space (browser, no proxy)
+    for (const txid of txids.slice(0, 8)) {
+      try {
+        const res = await fetch(
+          `https://mempool.space/api/tx/${txid}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (res.ok) {
+          const tx = await res.json();
+          if (tx.status?.block_height) heights[txid] = tx.status.block_height;
+        }
+      } catch (_) {}
+    }
+
+    // Inject pre-fetched data — same monkey-patch pattern used in the test suite
+    pyodide.globals.set('_addr_txs', pyodide.toPy(addrTxs));
+    pyodide.globals.set('_heights',  pyodide.toPy(heights));
+    pyodide.runPython(`
+      _h3.get_address_txs       = lambda addr: list(_addr_txs.get(addr, []))
+      _h4.get_utxo_block_height = lambda txid: _heights.get(txid)
+    `);
+  }
+
+  pyodide.globals.set('_input',      value);
+  pyodide.globals.set('_input_type', inputType);
+  pyodide.globals.set('_lookup',     lookup);
+
+  const resultJson = pyodide.runPython(`
+    report = _score_as(_input, _input_type, lookup=_lookup)
+    _json.dumps({
+      'score':        report.score,
+      'psbt_version': report.psbt_version,
+      'input_count':  report.input_count,
+      'output_count': report.output_count,
+      'warnings':     report.warnings,
+      'findings': [
+        {'id': f.heuristic_id, 'severity': f.severity.value, 'title': f.title,
+         'detail': f.detail, 'suggestion': f.suggestion, 'weight': f.weight}
+        for f in report.findings
+      ],
+      'checks': [
+        {'id': c.heuristic_id, 'severity': c.severity.value, 'title': c.title,
+         'status': c.status, 'reason': c.reason}
+        for c in report.checks
+      ],
+      'labels': report.labels
+    })
+  `);
+  return JSON.parse(resultJson);
+}
+
+initPyodide(); // starts loading in background — does not block page render
+
 // ── Fetch ─────────────────────────────────────────────────────
 async function fetchScore(value, inputType, lookup) {
   validateInput(value, inputType);
+
+  // Pyodide path: PSBT and rawtx only — txid needs server for prevout enrichment
+  if (pyodideReady && inputType !== 'txid') {
+    try {
+      return await scoreViaPyodide(value, inputType, lookup);
+    } catch (e) {
+      console.warn('Pyodide scoring failed, falling back to server:', e);
+    }
+  }
 
   try {
     const res = await fetch('/score', {

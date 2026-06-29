@@ -1,8 +1,6 @@
 import logging
 import time
 
-import requests
-
 BASES = [
     "https://blockstream.info/api",
     "https://mempool.space/api",
@@ -58,6 +56,7 @@ def _get_text(path: str) -> str:
 
 
 def _request_with_fallback(path: str):
+    import requests  # lazy — allows scorer.lookup to be imported in Pyodide without requests installed
     last_error = None
     for index, base in enumerate(BASES):
         provider = _provider_name(base)
