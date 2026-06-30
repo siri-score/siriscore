@@ -2,21 +2,14 @@
 from tests.test_parser import _sample_psbt_b64, _sample_rawtx_hex
 
 
-def test_score_returns_all_eight_checks():
+def test_score_returns_all_ten_checks():
     from scorer import score
 
     report = score(_sample_psbt_b64())
 
-    assert len(report.checks) == 8
+    assert len(report.checks) == 10
     assert [check.heuristic_id for check in report.checks] == [
-        "H1",
-        "H2",
-        "H3",
-        "H4",
-        "H5",
-        "H6",
-        "H7",
-        "H8",
+        "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10",
     ]
 
 

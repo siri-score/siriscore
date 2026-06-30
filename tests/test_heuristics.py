@@ -195,3 +195,147 @@ class TestH8TaintedLabel:
         inp = MagicMock(txid="d" * 64, vout=0, address="bc1qclean")
 
         assert check(_tx(inputs=[inp]), {}) is None
+
+
+class TestH9CoinJoinInput:
+    def test_fires_on_whirlpool_denom_input(self):
+        from scorer.heuristics.h9_coinjoin_input import check
+
+        inp = MagicMock(txid="a" * 64, vout=0, value=1_000_000, address=None)
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H9"
+        assert finding.positive is True
+        assert finding.weight == 0
+
+    def test_fires_on_all_whirlpool_denominations(self):
+        from scorer.heuristics.h9_coinjoin_input import check, WHIRLPOOL_DENOMS
+
+        for denom in WHIRLPOOL_DENOMS:
+            inp = MagicMock(txid="b" * 64, vout=0, value=denom, address=None)
+            finding = check(_tx(inputs=[inp]), {})
+            assert finding is not None, f"H9 should fire for denom {denom}"
+
+    def test_fires_on_coinjoin_label(self, tmp_path, monkeypatch):
+        import scorer.labels as labels_mod
+        from scorer.heuristics.h9_coinjoin_input import check
+
+        monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+        labels_mod.init_db()
+        labels_mod.add_label("e" * 64, 0, "Whirlpool 0.01 pool", "coinjoin")
+
+        inp = MagicMock(txid="e" * 64, vout=0, value=999, address=None)
+        finding = check(_tx(inputs=[inp]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H9"
+
+    def test_does_not_fire_on_standard_input(self):
+        from scorer.heuristics.h9_coinjoin_input import check
+
+        inp = MagicMock(txid="f" * 64, vout=0, value=123_456, address=None)
+        assert check(_tx(inputs=[inp]), {}) is None
+
+    def test_does_not_fire_when_value_is_none(self):
+        from scorer.heuristics.h9_coinjoin_input import check
+
+        inp = MagicMock(txid="0" * 64, vout=0, value=None, address=None)
+        assert check(_tx(inputs=[inp]), {}) is None
+
+
+class TestH10CoinJoinTx:
+    def _make_output(self, value):
+        o = MagicMock()
+        o.value = value
+        return o
+
+    def _make_input(self, script=b"\x00\x14" + b"\x11" * 20):
+        i = MagicMock()
+        i.script_pubkey = script
+        return i
+
+    def test_fires_on_whirlpool_structure(self):
+        from scorer.heuristics.h10_coinjoin_tx import check
+
+        inputs  = [self._make_input(bytes([i]) + b"\x14" + bytes(20)) for i in range(5)]
+        outputs = [self._make_output(1_000_000)] * 5
+
+        finding = check(_tx(inputs=inputs, outputs=outputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H10"
+        assert finding.positive is True
+        assert finding.weight < 0
+
+    def test_fires_on_wasabi_structure(self):
+        from scorer.heuristics.h10_coinjoin_tx import check
+
+        inputs  = [self._make_input(bytes([i]) + b"\x14" + bytes(20)) for i in range(6)]
+        outputs = [self._make_output(500_000)] * 6
+
+        finding = check(_tx(inputs=inputs, outputs=outputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H10"
+
+    def test_does_not_fire_on_standard_tx(self):
+        from scorer.heuristics.h10_coinjoin_tx import check
+
+        inputs  = [self._make_input(), self._make_input()]
+        outputs = [self._make_output(800_000), self._make_output(200_000)]
+
+        assert check(_tx(inputs=inputs, outputs=outputs), {}) is None
+
+    def test_does_not_fire_on_two_equal_outputs_below_threshold(self):
+        from scorer.heuristics.h10_coinjoin_tx import check
+
+        # Only 2 equal outputs — below MIN_PARTICIPANTS=3
+        inputs  = [self._make_input(), self._make_input()]
+        outputs = [self._make_output(1_000_000), self._make_output(1_000_000)]
+
+        assert check(_tx(inputs=inputs, outputs=outputs), {}) is None
+
+
+class TestCoinJoinH5Suppression:
+    def test_h9_suppresses_h5(self):
+        import scorer
+        from unittest.mock import patch
+
+        with patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9, \
+             patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
+             patch("scorer.heuristics.h5_consolidation.check") as mock_h5:
+
+            from scorer.report import Finding, Severity
+            mock_h9.return_value = Finding("H9", Severity.INFO, "CJ input", "d", "s", 0, positive=True)
+            mock_h10.return_value = None
+            mock_h5.return_value = Finding("H5", Severity.WARNING, "High inputs", "d", "s", 10)
+
+            from scorer.parser import ParsedTx, TxInput, TxOutput
+            tx = ParsedTx(version=2, inputs=[TxInput("a"*64, 0, b"", 0xffffffff)], outputs=[], locktime=0)
+
+            report = scorer._score_parsed(tx, {"version": 0})
+
+            h5_ids = [f.heuristic_id for f in report.findings]
+            assert "H5" not in h5_ids, "H5 should be suppressed when H9 fires"
+            assert "H9" in h5_ids
+
+    def test_h10_applies_score_bonus(self):
+        import scorer
+        from unittest.mock import patch
+
+        with patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
+             patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9:
+
+            from scorer.report import Finding, Severity
+            mock_h10.return_value = Finding("H10", Severity.INFO, "CJ tx", "d", "s", -10, positive=True)
+            mock_h9.return_value = None
+
+            from scorer.parser import ParsedTx, TxInput
+            tx = ParsedTx(version=2, inputs=[TxInput("b"*64, 0, b"", 0xffffffff)], outputs=[], locktime=0)
+
+            report = scorer._score_parsed(tx, {"version": 0})
+
+            # Score should be 100 (all heuristics pass) + bonus capped at 100
+            assert report.score == 100
+            assert any(f.heuristic_id == "H10" for f in report.findings)

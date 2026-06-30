@@ -17,6 +17,7 @@ class Finding:
     detail: str
     suggestion: str
     weight: int
+    positive: bool = False
 
 
 @dataclass

@@ -8,16 +8,19 @@ from scorer.heuristics import LOCAL as _LOCAL, NETWORK as _NETWORK
 from scorer.heuristics.h1_script_mismatch import classify_script
 
 _H8_SCORE_CAP = 40
+_COINJOIN_SUPPRESSORS = {"H9", "H10"}
 
 _HEURISTIC_DEFS = [
-    ("H1", Severity.CRITICAL, "Script type mismatch"),
-    ("H2", Severity.WARNING, "Round payment amount"),
-    ("H3", Severity.CRITICAL, "Address reuse on input"),
-    ("H4", Severity.WARNING, "UTXO age clustering"),
-    ("H5", Severity.WARNING, "High input count consolidation"),
-    ("H6", Severity.WARNING, "Dust input present"),
-    ("H7", Severity.INFO, "Non-BIP69 input/output ordering"),
-    ("H8", Severity.CRITICAL, "Labelled tainted UTXO in inputs"),
+    ("H1",  Severity.CRITICAL, "Script type mismatch"),
+    ("H2",  Severity.WARNING,  "Round payment amount"),
+    ("H3",  Severity.CRITICAL, "Address reuse on input"),
+    ("H4",  Severity.WARNING,  "UTXO age clustering"),
+    ("H5",  Severity.WARNING,  "High input count consolidation"),
+    ("H6",  Severity.WARNING,  "Dust input present"),
+    ("H7",  Severity.INFO,     "Non-BIP69 input/output ordering"),
+    ("H8",  Severity.CRITICAL, "Labelled tainted UTXO in inputs"),
+    ("H9",  Severity.INFO,     "Input is a coinjoin output"),
+    ("H10", Severity.INFO,     "Transaction is a coinjoin"),
 ]
 
 _NETWORK_IDS = {"H3", "H4"}
@@ -78,7 +81,13 @@ def _score_parsed(tx, psbt_meta, lookup: bool = False, backend=None) -> Report:
         if result is not None:
             findings.append(result)
 
-    raw_score = max(0, 100 - sum(f.weight for f in findings))
+    # Suppress H5 when a coinjoin heuristic fires (H9 or H10) — not a false positive
+    coinjoin_fired = any(f.heuristic_id in _COINJOIN_SUPPRESSORS for f in findings)
+    if coinjoin_fired:
+        findings = [f for f in findings if f.heuristic_id != "H5"]
+
+    # weight < 0 means bonus (H10: -10); cap final score at 100
+    raw_score = min(100, max(0, 100 - sum(f.weight for f in findings)))
 
     tainted = any(f.heuristic_id == "H8" for f in findings)
     final_score = min(raw_score, _H8_SCORE_CAP) if tainted else raw_score
@@ -104,14 +113,26 @@ def import_labels(json_path: str, source: str = "sparrow") -> int:
 
 def _build_checks(tx, findings: list[Finding], lookup: bool, backend=None) -> list[Check]:
     findings_by_id = {f.heuristic_id: f for f in findings}
-    # True when backend is an RPC node that has no non-wallet address index.
     no_address_index = backend is not None and not getattr(backend, "HAS_ADDRESS_INDEX", True)
+    coinjoin_fired = any(hid in findings_by_id for hid in _COINJOIN_SUPPRESSORS)
     checks = []
 
     for heuristic_id, severity, title in _HEURISTIC_DEFS:
         finding = findings_by_id.get(heuristic_id)
+
+        # Positive findings (H9, H10) show as "pass" with a positive note
+        if finding is not None and finding.positive:
+            checks.append(Check(heuristic_id, finding.severity, finding.title, "pass", finding.detail))
+            continue
+
         if finding is not None:
             checks.append(Check(heuristic_id, finding.severity, finding.title, "fail"))
+            continue
+
+        # H5 suppressed by coinjoin heuristic
+        if heuristic_id == "H5" and coinjoin_fired:
+            checks.append(Check(heuristic_id, severity, title, "pass",
+                "Suppressed — coinjoin inputs detected (H9/H10)"))
             continue
 
         if heuristic_id in _NETWORK_IDS and not lookup:

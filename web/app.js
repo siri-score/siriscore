@@ -294,8 +294,11 @@ function chip(text) {
 }
 
 function sortFindings(findings) {
+  // positive findings (H9/H10) always float to the bottom
   const rank = { critical: 0, warning: 1, info: 2 };
   return [...findings].sort((a, b) => {
+    if (a.positive && !b.positive) return 1;
+    if (!a.positive && b.positive) return -1;
     const d = (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3);
     return d || String(a.id).localeCompare(String(b.id));
   });
@@ -318,15 +321,18 @@ function checksFromFindings(findings) {
 
 function renderFinding(f) {
   const sev = f.severity.toLowerCase();
+  const cardClass = f.positive ? 'positive' : sev;
+  const badgeClass = f.positive ? 'positive' : sev;
+  const badgeLabel = f.positive ? 'COINJOIN' : f.severity.toUpperCase();
   return `
-    <div class="finding-card ${sev}">
+    <div class="finding-card ${cardClass}">
       <div class="finding-row1">
-        <span class="severity-badge ${sev}">${escHtml(f.severity.toUpperCase())}</span>
+        <span class="severity-badge ${badgeClass}">${badgeLabel}</span>
         <span class="heuristic-id">${escHtml(f.id)}</span>
       </div>
       <div class="finding-title">${escHtml(f.title)}</div>
       <div class="finding-detail">${escHtml(f.detail)}</div>
-      <div class="finding-suggestion">&rarr; ${escHtml(f.suggestion)}</div>
+      <div class="finding-suggestion">${f.positive ? '✓' : '&rarr;'} ${escHtml(f.suggestion)}</div>
     </div>`;
 }
 
