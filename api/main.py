@@ -74,6 +74,7 @@ def score_tx(req: ScoreRequest):
                 "detail": f.detail,
                 "suggestion": f.suggestion,
                 "weight": f.weight,
+                "positive": f.positive,
             }
             for f in report.findings
         ],

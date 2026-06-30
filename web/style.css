@@ -44,7 +44,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 0 max(24px, calc((100% - 1024px) / 2 + 24px));
   z-index: 100;
 }
 
@@ -79,6 +79,36 @@ header {
 }
 
 .nav-links a:hover { color: var(--orange); }
+
+/* ── Mobile footer */
+.mobile-footer {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+}
+
+.mobile-footer a {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 150ms;
+}
+
+.mobile-footer a:hover { color: var(--orange); }
+
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  .mobile-footer { display: flex; }
+  body { padding-bottom: 56px; }
+  header { justify-content: center; }
+}
 
 /* ── Page wrapper ───────────────────────────────────────── */
 .page { max-width: 780px; margin: 0 auto; padding: 0 24px 64px; }
@@ -335,9 +365,14 @@ textarea:focus { border-color: var(--orange); }
   border-left-style: solid;
 }
 
-.finding-card.critical { border-left-color: var(--red); }
-.finding-card.warning  { border-left-color: var(--amber); }
-.finding-card.info     { border-left-color: var(--slate); }
+.finding-card.critical  { border-left-color: var(--red); }
+.finding-card.warning   { border-left-color: var(--amber); }
+.finding-card.info      { border-left-color: var(--slate); }
+.finding-card.positive  {
+  border-left-color: var(--green);
+  background: var(--green-light);
+}
+.finding-card.positive .finding-title { color: var(--green); }
 
 .no-findings {
   background: var(--green-light);
@@ -366,6 +401,7 @@ textarea:focus { border-color: var(--orange); }
 .severity-badge.critical { background: var(--red-light);   color: var(--red); }
 .severity-badge.warning  { background: var(--amber-light); color: var(--amber); }
 .severity-badge.info     { background: var(--slate-light); color: var(--slate); border: 1px solid var(--border); }
+.severity-badge.positive { background: var(--green-light); color: var(--green); }
 
 .heuristic-id {
   font-family: 'JetBrains Mono', monospace;
