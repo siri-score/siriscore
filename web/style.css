@@ -365,9 +365,14 @@ textarea:focus { border-color: var(--orange); }
   border-left-style: solid;
 }
 
-.finding-card.critical { border-left-color: var(--red); }
-.finding-card.warning  { border-left-color: var(--amber); }
-.finding-card.info     { border-left-color: var(--slate); }
+.finding-card.critical  { border-left-color: var(--red); }
+.finding-card.warning   { border-left-color: var(--amber); }
+.finding-card.info      { border-left-color: var(--slate); }
+.finding-card.positive  {
+  border-left-color: var(--green);
+  background: var(--green-light);
+}
+.finding-card.positive .finding-title { color: var(--green); }
 
 .no-findings {
   background: var(--green-light);
@@ -396,6 +401,7 @@ textarea:focus { border-color: var(--orange); }
 .severity-badge.critical { background: var(--red-light);   color: var(--red); }
 .severity-badge.warning  { background: var(--amber-light); color: var(--amber); }
 .severity-badge.info     { background: var(--slate-light); color: var(--slate); border: 1px solid var(--border); }
+.severity-badge.positive { background: var(--green-light); color: var(--green); }
 
 .heuristic-id {
   font-family: 'JetBrains Mono', monospace;

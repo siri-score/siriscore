@@ -50,19 +50,31 @@ web/index.html   ← single-file vanilla HTML/CSS/JS frontend (no build step); s
 
 ### Scoring engine (scorer/\_\_init\_\_.py)
 
-`score(input_str)` calls `parse()`, then runs every module in `heuristics.ALL` and collects `Finding` objects. Raw score = `100 - sum(weights)`. If H8 fired (tainted UTXO), the final score is additionally capped at 40 regardless of other findings.
+`score(input_str)` calls `parse()`, then runs every module in `heuristics.ALL` and collects `Finding` objects. Score = `min(100, max(0, 100 - sum(weights)))`. Negative weights (H10: −10) add to the score. If H8 fired (tainted UTXO), the final score is additionally capped at 40.
+
+If H9 or H10 fires, the engine strips H5 from findings before scoring (coinjoin breaks the CIOH assumption — H5 would be a false positive).
 
 ### Heuristic contract
 
-Every heuristic is a pure function `check(tx, psbt_meta) → Finding | None`. Adding a new heuristic means: create `scorer/heuristics/hN_name.py`, implement `check()`, append the module to `ALL` in `scorer/heuristics/__init__.py`. No other changes needed.
+Every heuristic is a pure function `check(tx, psbt_meta) → Finding | None`. Adding a new heuristic means: create `scorer/heuristics/hN_name.py`, implement `check()`, append the module to `LOCAL` (or `NETWORK` if it needs outbound calls) in `scorer/heuristics/__init__.py`. Also add an entry to `_HEURISTIC_DEFS` in `scorer/__init__.py`.
+
+**Positive heuristics** (H9, H10, H11) set `positive=True` and use `weight=0` (no effect) or a negative weight (bonus). The engine and UI treat them differently — they render green and appear as `pass` in the checks list, not `fail`.
 
 ### H8 override behaviour
 
-H8 (`h8_tainted_label.py`) is special: it is still weighted like the others (weight=25) but the engine in `scorer/__init__.py` imposes a hard cap of 40 on the final score when H8 fires. The cap is defined as `_H8_SCORE_CAP = 40` at the top of `scorer/__init__.py`.
+H8 (`h8_tainted_label.py`) is special: weight=25 but the engine imposes a hard cap of 40 on the final score when H8 fires. Cap defined as `_H8_SCORE_CAP = 40` in `scorer/__init__.py`.
+
+### H9 / H10 — coinjoin suppression
+
+H9 detects coinjoin-sourced inputs (Whirlpool denominations or `coinjoin` label tag). H10 detects whether the tx being scored is itself a coinjoin (Whirlpool / Wasabi / JoinMarket structure). When either fires, H5 (CIOH) is stripped from findings — it would be a false positive.
+
+### H11 — Payjoin opportunity
+
+H11 reads `payment_uri` or `bip21_uri` from `psbt_meta` and checks for a BIP-21 `pj=` parameter (BIP-77 async Payjoin endpoint). Weight=0. Escalates to WARNING if H5 also fires.
 
 ### Label store
 
-`labels.py` manages a local SQLite file. The `tag` field drives scoring: `tainted` triggers H8; `coinjoin` is intended to suppress H5 (not yet implemented in H5); `clean` and `unknown` are informational. Import sources: Sparrow JSON (`{"txid:vout": "label string"}`), manual via CLI/API.
+`labels.py` manages a local SQLite file. The `tag` field drives scoring: `tainted` triggers H8; `coinjoin` triggers H9 (suppresses H5); `clean` and `unknown` are informational. Import sources: Sparrow BIP329 JSONL, manual via CLI/API.
 
 ### Frontend
 

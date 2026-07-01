@@ -341,6 +341,8 @@ python3 -m pytest --cov=scorer
 
 ## Heuristics
 
+### Penalty heuristics (deduct from score)
+
 | ID | Name | Severity | Weight | Requires network |
 |----|------|----------|--------|-----------------|
 | H1 | Script type mismatch | Critical | 25 | No |
@@ -352,7 +354,21 @@ python3 -m pytest --cov=scorer
 | H7 | Non-BIP69 ordering | Info | 5 | No |
 | H8 | Tainted labelled UTXO | Critical | 25 | No |
 
-**Score** = 100 − sum of triggered weights, floored at 0.  
+### Positive heuristics (bonus or no-penalty findings)
+
+| ID | Name | Severity | Weight | What triggers it |
+|----|------|----------|--------|-----------------|
+| H9 | Input is a coinjoin output | Info | 0 | Input value matches a Whirlpool denomination (100k / 1M / 5M / 50M sats) or input UTXO is labelled `coinjoin` |
+| H10 | Transaction is a coinjoin | Info | −10 (bonus) | Tx has 3+ equal-value outputs at a Whirlpool denomination, or Wasabi/WabiSabi / JoinMarket structure |
+| H11 | Payjoin opportunity available | Info / Warning | 0 | BIP-21 URI with `pj=` parameter present in `psbt_meta` |
+
+**H9 / H10 suppress H5** — when either fires, the CIOH penalty is dropped because coinjoin breaks the common-input-ownership assumption.
+
+**H10 score bonus** — adds +10 to the score (weight = −10). Final score is capped at 100.
+
+**H11 escalates to Warning** when H5 also fires, referencing the CIOH risk directly in the finding.
+
+**Score** = min(100, max(0, 100 − sum of weights)), where negative weights add to the score.  
 **H8 cap**: when H8 fires the final score is additionally capped at 40, regardless of other heuristics.
 
 ### Check statuses
@@ -361,10 +377,36 @@ Each heuristic produces a check in the report, even when it does not fire:
 
 | Status | Meaning |
 |--------|---------|
-| `pass` | Heuristic ran and found no issue |
-| `fail` | Heuristic fired — finding recorded |
+| `pass` | Heuristic ran and found no issue (includes suppressed H5 and positive H9/H10/H11) |
+| `fail` | Heuristic fired as a penalty finding |
 | `skipped` | Network check deliberately not run (`lookup=False`) |
 | `unavailable` | Could not run — input data missing (e.g. no prevout info in PSBT) |
+
+### Passing BIP-21 URI for H11
+
+H11 reads `payment_uri` or `bip21_uri` from `psbt_meta`. Pass it via the library:
+
+```python
+report = siriscore.score("cHNidP8BA...", lookup=False)
+
+# With Payjoin endpoint
+report = siriscore.score_as(
+    "cHNidP8BA...",
+    input_type="psbt",
+    psbt_meta={"payment_uri": "bitcoin:BC1Q...?amount=0.001&pj=https://btcpay.example.com/payjoin"},
+)
+```
+
+Or via the REST API (once `psbt_meta` passthrough is wired — planned):
+
+```json
+{
+  "input": "cHNidP8BA...",
+  "input_type": "psbt",
+  "lookup": false,
+  "payment_uri": "bitcoin:BC1Q...?amount=0.001&pj=https://btcpay.example.com/payjoin"
+}
+```
 
 ---
 

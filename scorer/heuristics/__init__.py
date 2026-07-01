@@ -7,6 +7,9 @@ from scorer.heuristics import (
     h6_dust,
     h7_bip69,
     h8_tainted_label,
+    h9_coinjoin_input,
+    h10_coinjoin_tx,
+    h11_payjoin_opportunity,
 )
 
 # Run entirely in-process — zero network calls
@@ -17,6 +20,9 @@ LOCAL = [
     h6_dust,
     h7_bip69,
     h8_tainted_label,
+    h9_coinjoin_input,
+    h10_coinjoin_tx,
+    h11_payjoin_opportunity,
 ]
 
 # Require outbound lookups to mempool.space/blockstream.info — opt-in only
