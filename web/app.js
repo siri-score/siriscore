@@ -73,13 +73,13 @@ const MOCK_GOOD = {
 };
 
 // ── State ────────────────────────────────────────────────────
-let activeTab = 'psbt';
+let activeTab = 'txid';
 let currentReport = null;
 
 const PLACEHOLDERS = {
   psbt:  'cHNidP8BAH0CAAAAAbxLLf9+AYfqfF69QAQuETnL…',
   rawtx: '0200000001abc123…',
-  txid:  'a4f1c9d2e3b5a6f7…'
+  txid:  'a4f1c9d2e3b5a6f7890abc1234567890abcdef1234567890abcdef1234567890ab'
 };
 
 const CAPTION_LOOKUP    = 'Input addresses are looked up via mempool.space. Your PSBT is never transmitted.';
