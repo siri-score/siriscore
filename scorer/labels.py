@@ -4,7 +4,20 @@ from pathlib import Path
 from json import JSONDecodeError
 
 import os
-DB_PATH = Path(os.environ.get("LABEL_DB_PATH", Path.home() / ".utxo-privacy-scorer" / "labels.db"))
+
+
+def _default_db_path() -> Path:
+    configured_path = os.environ.get("LABEL_DB_PATH")
+    if configured_path:
+        return Path(configured_path)
+
+    if os.environ.get("VERCEL"):
+        return Path(os.environ.get("TMPDIR", "/tmp")) / "utxo-privacy-scorer" / "labels.db"
+
+    return Path.home() / ".utxo-privacy-scorer" / "labels.db"
+
+
+DB_PATH = _default_db_path()
 SPARROW_FORMAT_TESTED = "Sparrow Wallet v1.8+ BIP329 JSONL label export"
 
 

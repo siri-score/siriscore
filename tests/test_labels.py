@@ -1,5 +1,26 @@
 """Tests for SQLite label store."""
 import json
+from pathlib import Path
+
+
+def test_default_db_path_uses_tmp_on_vercel(monkeypatch):
+    import scorer.labels as labels_mod
+
+    monkeypatch.delenv("LABEL_DB_PATH", raising=False)
+    monkeypatch.delenv("TMPDIR", raising=False)
+    monkeypatch.setenv("VERCEL", "1")
+
+    assert labels_mod._default_db_path() == Path("/tmp") / "utxo-privacy-scorer" / "labels.db"
+
+
+def test_default_db_path_honors_label_db_path(monkeypatch, tmp_path):
+    import scorer.labels as labels_mod
+
+    db_path = tmp_path / "custom-labels.db"
+    monkeypatch.setenv("LABEL_DB_PATH", str(db_path))
+    monkeypatch.setenv("VERCEL", "1")
+
+    assert labels_mod._default_db_path() == db_path
 
 
 def test_add_and_retrieve(tmp_path, monkeypatch):
