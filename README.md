@@ -80,7 +80,7 @@ The results panel shows:
 
 ### 4. Network checks (H3 + H4)
 
-By default the **Enable network checks** toggle is **on** when the backend is running. This allows the server to query [mempool.space](https://mempool.space) (with [blockstream.info](https://blockstream.info) as fallback) for:
+By default the **Enable network checks** toggle is **on** when the backend is running. This allows the server to query [mempool.space](https://mempool.space) (with [blockstream.info](https://blockstream.info) as fallback — if mempool.space is unreachable) for:
 
 | Heuristic | What it looks up | Why it matters |
 |-----------|-----------------|----------------|
