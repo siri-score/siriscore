@@ -29,8 +29,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nkatha23/siriscore"
-Repository = "https://github.com/nkatha23/siriscore"
+Homepage = "https://github.com/siri-score/siriscore"
+Repository = "https://github.com/siri-score/siriscore"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov", "ruff", "mypy", "build", "twine", "httpx"]

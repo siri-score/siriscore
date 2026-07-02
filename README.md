@@ -2,7 +2,7 @@
 
 Pre-broadcast Bitcoin transaction privacy analysis. Accepts a PSBT, raw tx hex, or txid and returns a scored privacy report with actionable findings — before you sign.
 
-[![CI](https://github.com/nkatha23/siriscore/actions/workflows/ci.yml/badge.svg)](https://github.com/nkatha23/siriscore/actions/workflows/ci.yml)
+[![CI](https://github.com/siri-score/siriscore/actions/workflows/ci.yml/badge.svg)](https://github.com/siri-score/siriscore/actions/workflows/ci.yml)
 
 ---
 
@@ -26,7 +26,7 @@ Package page: [https://pypi.org/project/siriscore/](https://pypi.org/project/sir
 ### From source (development)
 
 ```bash
-git clone https://github.com/nkatha23/siriscore.git
+git clone https://github.com/siri-score/siriscore.git
 cd siriscore
 pip install -e ".[dev]"
 
