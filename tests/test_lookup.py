@@ -16,15 +16,15 @@ class _Response:
             raise requests.HTTPError(f"{self.status_code} error")
 
 
-def test_get_tx_falls_back_to_mempool(monkeypatch):
+def test_get_tx_falls_back_to_blockstream(monkeypatch):
     import scorer.lookup as lookup
 
     calls = []
 
     def fake_get(url, timeout):
         calls.append(url)
-        if "blockstream.info" in url:
-            raise requests.Timeout("blockstream slow")
+        if "mempool.space" in url:
+            raise requests.Timeout("mempool slow")
         return _Response(payload={"txid": "abc", "status": {"block_height": 123}})
 
     monkeypatch.setattr(lookup, "_cache", {})
@@ -34,20 +34,20 @@ def test_get_tx_falls_back_to_mempool(monkeypatch):
 
     assert tx["status"]["block_height"] == 123
     assert calls == [
-        "https://blockstream.info/api/tx/abc",
         "https://mempool.space/api/tx/abc",
+        "https://blockstream.info/api/tx/abc",
     ]
 
 
-def test_get_tx_hex_falls_back_to_mempool(monkeypatch):
+def test_get_tx_hex_falls_back_to_blockstream(monkeypatch):
     import scorer.lookup as lookup
 
     calls = []
 
     def fake_get(url, timeout):
         calls.append(url)
-        if "blockstream.info" in url:
-            raise requests.Timeout("blockstream slow")
+        if "mempool.space" in url:
+            raise requests.Timeout("mempool slow")
         if url.endswith("/hex"):
             return _Response(text="02000000")
         return _Response(payload={"txid": "abc"})
@@ -58,14 +58,14 @@ def test_get_tx_hex_falls_back_to_mempool(monkeypatch):
 
     assert lookup.get_tx_hex("abc") == "02000000"
     assert calls == [
-        "https://blockstream.info/api/tx/abc",
         "https://mempool.space/api/tx/abc",
-        "https://blockstream.info/api/tx/abc/hex",
+        "https://blockstream.info/api/tx/abc",
         "https://mempool.space/api/tx/abc/hex",
+        "https://blockstream.info/api/tx/abc/hex",
     ]
 
 
-def test_get_tx_uses_blockstream_first(monkeypatch):
+def test_get_tx_uses_mempool_first(monkeypatch):
     import scorer.lookup as lookup
 
     calls = []
@@ -79,4 +79,4 @@ def test_get_tx_uses_blockstream_first(monkeypatch):
 
     lookup.get_tx("abc")
 
-    assert calls == ["https://blockstream.info/api/tx/abc"]
+    assert calls == ["https://mempool.space/api/tx/abc"]
