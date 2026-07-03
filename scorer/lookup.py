@@ -4,8 +4,8 @@ import time
 import requests
 
 BASES = [
-    "https://mempool.space/api",
     "https://blockstream.info/api",
+    "https://mempool.space/api",
 ]
 REQUEST_TIMEOUT = (1, 8)
 _cache = {}
