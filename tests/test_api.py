@@ -20,6 +20,28 @@ def test_label_import_rejects_zero_label_file(tmp_path, monkeypatch):
     assert "No labels were imported" in response.json()["detail"]
 
 
+def test_score_defaults_to_no_network_lookup(tmp_path, monkeypatch):
+    import scorer.labels as labels_mod
+    import scorer.lookup as lookup_mod
+    from tests.test_parser import _sample_rawtx_hex
+
+    monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
+    labels_mod.init_db()
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("network call attempted on default /score request")
+
+    monkeypatch.setattr(lookup_mod, "_request_with_fallback", _fail)
+
+    client = TestClient(app)
+    response = client.post("/score", json={"input": _sample_rawtx_hex(), "input_type": "rawtx"})
+
+    assert response.status_code == 200
+    checks = {c["id"]: c["status"] for c in response.json()["checks"]}
+    assert checks["H3"] in ("skipped", "unavailable")
+    assert checks["H4"] in ("skipped", "unavailable")
+
+
 def test_score_returns_only_matching_input_labels(tmp_path, monkeypatch):
     import scorer.labels as labels_mod
     from tests.test_parser import _sample_psbt_b64, P2WPKH_SCRIPT
