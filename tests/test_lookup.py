@@ -34,8 +34,8 @@ def test_get_tx_falls_back_to_blockstream(monkeypatch):
 
     assert tx["status"]["block_height"] == 123
     assert calls == [
-        "https://mempool.space/api/tx/abc",
-        "https://blockstream.info/api/tx/abc",
+        "https://mempool.space/api/tx/btc",
+        "https://blockstream.info/api/tx/btc",
     ]
 
 
@@ -56,7 +56,7 @@ def test_get_tx_hex_falls_back_to_blockstream(monkeypatch):
     monkeypatch.setattr(lookup, "_hex_cache", {})
     monkeypatch.setattr(requests, "get", fake_get)
 
-    assert lookup.get_tx_hex("abc") == "02000000"
+    assert lookup.get_tx_hex("btc") == "02000000"
     assert calls == [
         "https://mempool.space/api/tx/btc",
         "https://blockstream.info/api/tx/btc",
