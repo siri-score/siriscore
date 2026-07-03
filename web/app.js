@@ -72,7 +72,7 @@ const MOCK_GOOD = {
   labels: []
 };
 
-// ── State ────────────────────────────────────────────────────
+// State
 let activeTab = 'txid';
 let currentReport = null;
 
@@ -82,10 +82,11 @@ const PLACEHOLDERS = {
   txid:  'a4f1c9d2e3b5a6f7890abc1234567890abcdef1234567890abcdef1234567890ab'
 };
 
-const CAPTION_LOOKUP    = 'Input addresses are looked up via mempool.space. Your PSBT is never transmitted.';
+const CAPTION_LOOKUP = 'Input addresses are looked up via blockstream.info/mempool.space. Your PSBT is never transmitted.';
 const CAPTION_NO_LOOKUP = 'Network checks disabled. No data leaves your machine.';
+const CAPTION_NO_LOOKUP_TXID = 'Network checks disabled. The txid itself is still fetched from blockstream.info/mempool.space.';
 
-// ── DOM refs ─────────────────────────────────────────────────
+// DOM refs
 const txInput        = document.getElementById('tx-input');
 const btnAnalyse     = document.getElementById('btn-analyse');
 const errorBanner    = document.getElementById('error-banner');
@@ -101,34 +102,40 @@ const checksList     = document.getElementById('checks-list');
 const labelsSection  = document.getElementById('labels-section');
 const labelsList     = document.getElementById('labels-list');
 const nextList       = document.getElementById('next-list');
+const offlineNotice  = document.getElementById('offline-notice');
 const btnDownload    = document.getElementById('btn-download');
 const fileInput      = document.getElementById('file-input');
 const networkCheckbox = document.getElementById('network-checks');
 const privacyCaption  = document.getElementById('privacy-caption');
 
-// ── Caption ──────────────────────────────────────────────────
+// Caption
 function updateCaption() {
-  privacyCaption.textContent = networkCheckbox.checked ? CAPTION_LOOKUP : CAPTION_NO_LOOKUP;
+  if (networkCheckbox.checked) {
+    privacyCaption.textContent = CAPTION_LOOKUP;
+  } else {
+    privacyCaption.textContent = activeTab === 'txid' ? CAPTION_NO_LOOKUP_TXID : CAPTION_NO_LOOKUP;
+  }
 }
 networkCheckbox.addEventListener('change', updateCaption);
 updateCaption();
 
-// ── Pill tabs ────────────────────────────────────────────────
+// Pill tabs 
 document.querySelectorAll('.pill').forEach(pill => {
   pill.addEventListener('click', () => {
     document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
     activeTab = pill.dataset.tab;
     txInput.placeholder = PLACEHOLDERS[activeTab];
+    updateCaption();
   });
 });
 
-// ── Hide error banner on input ────────────────────────────────
+// Hide error banner on input
 txInput.addEventListener('input', () => {
   errorBanner.style.display = 'none';
 });
 
-// ── Import labels ─────────────────────────────────────────────
+// Import labels
 document.getElementById('import-labels-btn').addEventListener('click', () => {
   fileInput.click();
 });
@@ -155,7 +162,7 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = '';
 });
 
-// ── Analyse ───────────────────────────────────────────────────
+// Analyse
 btnAnalyse.addEventListener('click', async () => {
   const lookup = networkCheckbox.checked;
   const value  = txInput.value.trim();
@@ -189,7 +196,7 @@ btnAnalyse.addEventListener('click', async () => {
   renderReport(report);
 });
 
-// ── Fetch ─────────────────────────────────────────────────────
+// Fetch
 async function fetchScore(value, inputType, lookup) {
   validateInput(value, inputType);
 
@@ -240,7 +247,7 @@ function validateInput(value, inputType) {
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Render ────────────────────────────────────────────────────
+// Render
 function renderReport(report) {
   const { score, findings, checks, labels, input_count, output_count, psbt_version } = report;
 
@@ -267,6 +274,16 @@ function renderReport(report) {
   const orderedChecks = sortChecks(checks || checksFromFindings(findings));
   checksCount.textContent = orderedChecks.length + ' checks';
   checksList.innerHTML = orderedChecks.map(renderCheck).join('');
+
+  const unavailable = orderedChecks.filter(c => c.status === 'unavailable').length;
+  if (unavailable > 0) {
+    offlineNotice.textContent =
+      `This is a partial score: ${unavailable} check${unavailable !== 1 ? 's' : ''} could not run without ` +
+      'input prevout data. Enable network checks or provide a PSBT for a complete score.';
+    offlineNotice.style.display = 'block';
+  } else {
+    offlineNotice.style.display = 'none';
+  }
 
   if (labels && labels.length > 0) {
     labelsSection.style.display = 'block';
@@ -397,7 +414,13 @@ btnDownload.addEventListener('click', () => {
   let txt = 'SiriScore Privacy Report\n========================\n';
   txt += `Score: ${r.score}/100 (${vLabel})\n`;
   txt += `Inputs: ${r.input_count} | Outputs: ${r.output_count} | PSBT v${r.psbt_version}\n`;
-  txt += `Generated: ${now}\n\n`;
+  txt += `Generated: ${now}\n`;
+  const unavailableChecks = (r.checks || []).filter(c => c.status === 'unavailable').length;
+  if (unavailableChecks > 0) {
+    txt += `Note: partial score — ${unavailableChecks} check(s) could not run without input `;
+    txt += 'prevout data. Enable network checks or provide a PSBT for a complete score.\n';
+  }
+  txt += '\n';
 
   txt += 'FINDINGS\n--------\n';
   const rf = sortFindings(r.findings);

@@ -246,14 +246,17 @@ report = score("cHNidP8BA...")
 
 ### Privacy-first by default
 
-Network lookups (H3, H4) are **opt-out by default**. No address or txid is ever sent to a third party unless you explicitly request it:
+Network lookups (H3, H4) are **opt-in**. With the default `lookup=False`, PSBT and raw-tx input make **zero network calls** — raw-tx prevouts are simply left unenriched, so heuristics needing input values report `unavailable` instead of leaking. No address or txid is sent to a third party unless you explicitly request it. The one exception is txid input, which by definition requires fetching the transaction (from mempool.space/blockstream.info, or your own node with `lookup="rpc"`).
 
 ```python
-# Default — fully offline, H3/H4 skipped
+# Default — fully offline for PSBT and raw-tx input, H3/H4 skipped
 report = siriscore.score("cHNidP8BA...")
 
-# Opt in to network checks (queries mempool.space with blockstream.info fallback)
+# Opt in to network checks (queries blockstream.info with mempool.space fallback)
 report = siriscore.score("cHNidP8BA...", lookup=True)
+
+# Own-node mode — every fetch goes through your Bitcoin Core node, never a public explorer
+report = siriscore.score("a1b2c3...", lookup="rpc", rpc_url="http://127.0.0.1:8332")
 ```
 
 ### Coin labels and H8
@@ -307,7 +310,7 @@ Request body:
 |-------|------|---------|-------------|
 | `input` | string | required | PSBT (base64), raw tx hex, or txid |
 | `input_type` | string | `"psbt"` | `"psbt"`, `"rawtx"`, or `"txid"` |
-| `lookup` | boolean | `true` | Enable H3/H4 network checks |
+| `lookup` | boolean | `false` | Enable H3/H4 network checks (sends tx details to mempool.space/blockstream.info) |
 
 Response fields: `score`, `findings`, `checks`, `labels`, `input_count`, `output_count`, `psbt_version`.
 

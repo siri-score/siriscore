@@ -21,8 +21,8 @@ logger = logging.getLogger("siriscore.api")
 
 class ScoreRequest(BaseModel):
     input: str
-    input_type: str = "psbt"  # psbt | rawtx | txid
-    lookup: bool = True        # True = run H3+H4 via mempool.space (demo default)
+    input_type: str = "psbt"
+    lookup: bool = False
 
 
 class LabelRequest(BaseModel):
