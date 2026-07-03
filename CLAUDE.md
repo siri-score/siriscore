@@ -38,7 +38,9 @@ scorer/          ← standalone Python library (importable by wallets)
   __init__.py    ← public API: score(input_str) → Report, import_labels(path) → int
   report.py      ← data models: Severity enum, Finding dataclass, Report dataclass
   parser.py      ← dispatch: base64 PSBT → _parse_psbt, hex → _parse_rawtx, 64-char hex → txid lookup
-  lookup.py      ← mempool.space REST wrapper with in-process dict cache; used by H3, H4
+                 ←   raw-tx prevout enrichment is gated on lookup/backend — offline stays offline
+  lookup.py      ← blockstream.info/mempool.space REST wrapper with in-process dict cache;
+                 ←   used by H3, H4, txid fetch, and opt-in raw-tx prevout enrichment
   labels.py      ← SQLite store at ~/.utxo-privacy-scorer/labels.db; Sparrow JSON import
   heuristics/    ← one module per heuristic, all share the same signature:
     __init__.py  ←   check(tx, psbt_meta) → Finding | None

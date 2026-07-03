@@ -53,9 +53,9 @@
     <input type="file" id="file-input" accept=".json,.jsonl" />
 
     <label class="network-toggle">
-      <input type="checkbox" id="network-checks" checked />
+      <input type="checkbox" id="network-checks" />
       <span>Enable network checks
-        <span class="network-toggle-detail">(H3: address reuse, H4: UTXO age — queries mempool.space)</span>
+        <span class="network-toggle-detail">(H3: address reuse, H4: UTXO age — sends tx details to mempool.space/blockstream.info)</span>
       </span>
     </label>
   </section>
@@ -82,6 +82,8 @@
         <div class="meta-chips" id="meta-chips"></div>
       </div>
     </div>
+
+    <div class="offline-notice" id="offline-notice"></div>
 
     <!-- Findings -->
     <div class="findings-section">

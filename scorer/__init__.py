@@ -37,14 +37,19 @@ def score(
 ) -> Report:
     """Score a PSBT (base64), raw tx hex, or txid.
 
-    lookup=False (default): H1,H2,H5,H6,H7,H8 — zero network calls.
-    lookup=True or lookup="mempool": also runs H3+H4 via mempool.space/blockstream.
-    lookup="rpc": runs H4 via Bitcoin Core RPC; H3 skipped (no non-wallet address index).
-      Requires rpc_url; rpc_user/rpc_password optional if node has no auth.
+    lookup=False (default): H1,H2,H5,H6,H7,H8 — zero network calls for PSBT and
+      raw-tx input (raw-tx prevouts stay unenriched). txid input still requires
+      one fetch of the tx itself, by design.
+    lookup=True or lookup="mempool": also runs H3+H4 and enriches raw-tx prevouts
+      via mempool.space/blockstream.
+    lookup="rpc": runs H4 via Bitcoin Core RPC; H3 skipped (no non-wallet address
+      index). All fetches (txid, prevouts) go through the node — never the public
+      explorers. Requires rpc_url; rpc_user/rpc_password optional if node has no auth.
     """
     backend = _make_backend(lookup, rpc_url, rpc_user, rpc_password)
     run_network = bool(lookup) or (backend is not None)
-    return _score_parsed(*parse(input_str), lookup=run_network, backend=backend)
+    return _score_parsed(*parse(input_str, lookup=run_network, backend=backend),
+                         lookup=run_network, backend=backend)
 
 
 def score_as(
@@ -58,7 +63,8 @@ def score_as(
     """Score input using an explicit type: psbt, rawtx, or txid."""
     backend = _make_backend(lookup, rpc_url, rpc_user, rpc_password)
     run_network = bool(lookup) or (backend is not None)
-    return _score_parsed(*parse_as(input_str, input_type), lookup=run_network, backend=backend)
+    return _score_parsed(*parse_as(input_str, input_type, lookup=run_network, backend=backend),
+                         lookup=run_network, backend=backend)
 
 
 def _make_backend(lookup, rpc_url, rpc_user, rpc_password):
@@ -128,7 +134,7 @@ def _build_checks(tx, findings: list[Finding], lookup: bool, backend=None) -> li
             continue
 
         if finding is not None:
-            checks.append(Check(heuristic_id, finding.severity, finding.title, "fail"))
+            checks.append(Check(heuristic_id, finding.severity, finding.title, "fail", finding.detail))
             continue
 
         # H5 suppressed by coinjoin heuristic

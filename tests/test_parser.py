@@ -88,15 +88,75 @@ def test_rawtx_parses_inputs_and_outputs(monkeypatch):
     assert tx.outputs[0].script_pubkey.hex() == P2WPKH_SCRIPT
 
 
-def test_rawtx_enriches_input_prevout(monkeypatch):
+def test_rawtx_enriches_input_prevout_with_lookup(monkeypatch):
     import scorer.parser as parser
 
     monkeypatch.setattr(parser, "get_tx_hex", lambda txid: _sample_prevtx_hex())
 
-    tx, _ = parser.parse(_sample_rawtx_hex())
+    tx, _ = parser.parse(_sample_rawtx_hex(), lookup=True)
 
     assert tx.inputs[0].value == 7777
     assert tx.inputs[0].script_pubkey.hex() == P2WPKH_SCRIPT
+
+
+def test_rawtx_default_makes_no_network_calls(monkeypatch):
+    import scorer.parser as parser
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("network call attempted with lookup=False")
+
+    monkeypatch.setattr(parser, "get_tx", _fail)
+    monkeypatch.setattr(parser, "get_tx_hex", _fail)
+
+    tx, _ = parser.parse(_sample_rawtx_hex())
+
+    assert tx.inputs[0].value is None
+    assert tx.inputs[0].script_pubkey == b""
+
+
+class _FakeBackend:
+    def __init__(self, tx_hex):
+        self._tx_hex = tx_hex
+        self.calls = []
+
+    def getrawtransaction(self, txid):
+        self.calls.append(txid)
+        return {"hex": self._tx_hex}
+
+
+def test_rawtx_enriches_via_rpc_backend_not_explorers(monkeypatch):
+    import scorer.parser as parser
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("public explorer called despite RPC backend")
+
+    monkeypatch.setattr(parser, "get_tx", _fail)
+    monkeypatch.setattr(parser, "get_tx_hex", _fail)
+    backend = _FakeBackend(_sample_prevtx_hex())
+
+    tx, _ = parser.parse(_sample_rawtx_hex(), backend=backend)
+
+    assert tx.inputs[0].value == 7777
+    assert backend.calls == ["01" + "00" * 31]
+
+
+def test_txid_fetched_via_rpc_backend_not_explorers(monkeypatch):
+    import scorer.parser as parser
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("public explorer called despite RPC backend")
+
+    monkeypatch.setattr(parser, "get_tx", _fail)
+    monkeypatch.setattr(parser, "get_tx_hex", _fail)
+
+    class _TxidBackend:
+        def getrawtransaction(self, txid):
+            return {"hex": _sample_rawtx_hex() if txid == "d" * 64 else _sample_prevtx_hex()}
+
+    tx, _ = parser.parse("d" * 64, backend=_TxidBackend())
+
+    assert len(tx.inputs) == 1
+    assert tx.inputs[0].value == 7777
 
 
 def test_psbt_input_detected_and_prevout_applied():

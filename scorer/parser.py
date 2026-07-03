@@ -33,20 +33,26 @@ class ParsedTx:
     locktime: int
 
 
-def parse(input_str: str):
-    """Accept base64 PSBT, raw hex, or txid. Returns (tx, psbt_meta)."""
+def parse(input_str: str, lookup: bool = False, backend=None):
+    """Accept base64 PSBT, raw hex, or txid. Returns (tx, psbt_meta).
+
+    lookup=False (default): no network calls for PSBT or raw-tx input — raw-tx
+    prevouts are left unenriched. txid input always requires fetching the tx.
+    backend: optional Bitcoin Core RPC backend; when set, all fetches go
+    through it instead of the public explorers.
+    """
     input_str = input_str.strip()
 
     if len(input_str) == 64 and all(c in "0123456789abcdefABCDEF" for c in input_str):
-        return _parse_txid(input_str)
+        return _parse_txid(input_str, backend=backend)
 
     if input_str.startswith("cHNidP"):
         return _parse_psbt(input_str)
 
-    return _parse_rawtx(input_str)
+    return _parse_rawtx(input_str, enrich_prevouts=lookup or backend is not None, backend=backend)
 
 
-def parse_as(input_str: str, input_type: str):
+def parse_as(input_str: str, input_type: str, lookup: bool = False, backend=None):
     """Parse input using the user's selected input type."""
     input_str = input_str.strip()
     normalized_type = input_type.strip().lower()
@@ -54,7 +60,7 @@ def parse_as(input_str: str, input_type: str):
     if normalized_type == "txid":
         if not _is_txid(input_str):
             raise ValueError("Invalid txid: expected 64 hexadecimal characters")
-        return _parse_txid(input_str)
+        return _parse_txid(input_str, backend=backend)
 
     if normalized_type == "psbt":
         if not input_str:
@@ -64,7 +70,7 @@ def parse_as(input_str: str, input_type: str):
     if normalized_type == "rawtx":
         if not _is_hex(input_str):
             raise ValueError("Invalid raw transaction hex")
-        return _parse_rawtx(input_str)
+        return _parse_rawtx(input_str, enrich_prevouts=lookup or backend is not None, backend=backend)
 
     raise ValueError("Invalid input type: expected psbt, rawtx, or txid")
 
@@ -113,7 +119,7 @@ def _parse_psbt(b64: str):
     return tx, {"version": psbt_version}
 
 
-def _parse_rawtx(hex_str: str, enrich_prevouts: bool = True):
+def _parse_rawtx(hex_str: str, enrich_prevouts: bool = False, backend=None):
     try:
         data = bytes.fromhex(hex_str.strip())
     except ValueError as exc:
@@ -154,12 +160,24 @@ def _parse_rawtx(hex_str: str, enrich_prevouts: bool = True):
 
     tx = ParsedTx(version=version, inputs=inputs, outputs=outputs, locktime=locktime)
     if enrich_prevouts:
-        _enrich_prevouts(tx)
+        _enrich_prevouts(tx, backend=backend)
 
     return tx, {"version": 0}
 
 
-def _parse_txid(txid: str):
+def _parse_txid(txid: str, backend=None):
+    if backend is not None:
+        try:
+            tx_hex = backend.getrawtransaction(txid)["hex"]
+        except Exception as exc:
+            raise ValueError(
+                "Could not fetch txid via Bitcoin Core RPC. "
+                "Check the node is reachable and has txindex=1."
+            ) from exc
+        tx, meta = _parse_rawtx(tx_hex, enrich_prevouts=False)
+        _enrich_prevouts(tx, backend=backend)
+        return tx, meta
+
     try:
         raw = get_tx(txid)
         tx_hex = raw.get("hex") or get_tx_hex(txid)
@@ -194,7 +212,7 @@ def _apply_psbt_input_utxo(txin: TxInput, input_map: list[tuple[bytes, bytes]]) 
                 txin.address = script_to_address(prevout.script_pubkey)
 
 
-def _enrich_prevouts(tx: ParsedTx) -> None:
+def _enrich_prevouts(tx: ParsedTx, backend=None) -> None:
     for txin in tx.inputs:
         if txin.script_pubkey and txin.value is not None:
             continue
@@ -202,7 +220,11 @@ def _enrich_prevouts(tx: ParsedTx) -> None:
             continue
 
         try:
-            prev_tx, _ = _parse_rawtx(get_tx_hex(txin.txid), enrich_prevouts=False)
+            if backend is not None:
+                prev_hex = backend.getrawtransaction(txin.txid)["hex"]
+            else:
+                prev_hex = get_tx_hex(txin.txid)
+            prev_tx, _ = _parse_rawtx(prev_hex, enrich_prevouts=False)
         except Exception:
             continue
 
