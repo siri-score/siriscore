@@ -11,6 +11,7 @@ from scorer.heuristics import (
     h10_coinjoin_tx,
     h11_payjoin_opportunity,
     h13_nlocktime,
+    h14_rbf_signalling,
 )
 
 # Run entirely in-process — zero network calls
@@ -25,6 +26,7 @@ LOCAL = [
     h10_coinjoin_tx,
     h11_payjoin_opportunity,
     h13_nlocktime,
+    h14_rbf_signalling,
 ]
 
 # Require outbound lookups to mempool.space/blockstream.info — opt-in only
