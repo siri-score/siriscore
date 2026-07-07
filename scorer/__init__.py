@@ -23,6 +23,7 @@ _HEURISTIC_DEFS = [
     ("H10", Severity.INFO,     "Transaction is a coinjoin"),
     ("H11", Severity.INFO,     "Payjoin opportunity available"),
     ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check"),
+    ("H14", Severity.INFO,     "Replace-By-Fee (RBF) Signalling Fingerprint"),
 ]
 
 _NETWORK_IDS = {"H3", "H4"}

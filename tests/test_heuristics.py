@@ -500,3 +500,63 @@ class TestH13NLocktime:
             report = scorer._score_parsed(tx, {"version": 0})
 
         assert report.score == 95
+
+
+class TestH14RBFSignalling:
+    def test_all_inputs_signal_rbf(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFD), MagicMock(sequence=0)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 0
+        assert finding.positive is True
+
+    def test_mixed_signalling_fires_warning(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFD), MagicMock(sequence=0xFFFFFFFF)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.WARNING
+        assert finding.weight == 5
+        assert finding.positive is False
+
+    def test_no_inputs_signal_rbf(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFF), MagicMock(sequence=0xFFFFFFFE)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 0
+        assert finding.positive is True
+
+    def test_no_inputs_returns_none(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        assert check(_tx(inputs=[]), {}) is None
+
+    def test_score_deduction_is_exactly_five_on_mixed_signalling(self):
+        import scorer
+        from scorer.parser import ParsedTx, TxInput
+
+        tx = ParsedTx(
+            version=2,
+            inputs=[
+                TxInput("a" * 64, 0, b"", 0xFFFFFFFD),
+                TxInput("b" * 64, 1, b"", 0xFFFFFFFF),
+            ],
+            outputs=[],
+            locktime=850_000,
+        )
+        report = scorer._score_parsed(tx, {"version": 0})
+
+        assert report.score == 95
