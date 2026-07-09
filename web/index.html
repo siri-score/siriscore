@@ -3,7 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SiriScore — Bitcoin Privacy Scorer</title>
+  <title>SiriScore - Pre-broadcast Bitcoin Privacy Scorer</title>
+  <meta name="description" content="SiriScore is a Bitcoin transaction intelligence layer. Check any PSBT, raw transaction, or txid for privacy leaks before broadcasting and get a 0–100 privacy score with plain-English explanations." />
+  <link rel="canonical" href="https://siriscore.xyz/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SiriScore" />
+  <meta property="og:title" content="SiriScore — Bitcoin Privacy Scorer" />
+  <meta property="og:description" content="A Bitcoin transaction intelligence layer. Check your transaction for privacy leaks before broadcasting — free, open-source, runs offline." />
+  <meta property="og:url" content="https://siriscore.xyz/" />
+  <meta property="og:image" content="https://siriscore.xyz/images/logo.png" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@siriscore" />
+  <meta name="twitter:title" content="SiriScore — Bitcoin Privacy Scorer" />
+  <meta name="twitter:description" content="A Bitcoin transaction intelligence layer. Check your transaction for privacy leaks before broadcasting — free, open-source, runs offline." />
+  <meta name="twitter:image" content="https://siriscore.xyz/images/logo.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "SiriScore",
+    "alternateName": "SiriScore — Bitcoin Transaction Intelligence Layer",
+    "slogan": "The Bitcoin transaction intelligence layer",
+    "url": "https://siriscore.xyz/",
+    "description": "A Bitcoin transaction intelligence layer. Pre-broadcast Bitcoin transaction privacy analyzer. Scores PSBTs, raw transactions, and txids from 0 to 100 across privacy heuristics like address reuse, round amounts, and the common-input-ownership heuristic, with plain-English explanations.",
+    "applicationCategory": "SecurityApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "sameAs": [
+      "https://github.com/siri-score/siriscore",
+      "https://x.com/siriscore",
+      "https://www.linkedin.com/in/siriscore/",
+      "https://www.instagram.com/siriscore.btc/",
+      "https://njump.me/npub17q93lwmnkvumtlf0cgv7jl6eeg2wvg2gf85rfcmwlcqs87flqe0s7vr3un"
+    ]
+  }
+  </script>
+
   <link rel="icon" href="images/eyelogoonly.png" type="image/png" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -27,7 +68,7 @@
 
   <!-- Input zone -->
   <section class="input-zone">
-    <h1>Check your transaction</h1>
+    <h1>Check your Bitcoin transaction's privacy</h1>
     <p class="subtitle" id="privacy-caption"></p>
 
     <div class="pill-tabs">
@@ -121,6 +162,9 @@
     <button class="btn-download" id="btn-download">Download report</button>
 
   </section>
+
+  <!-- About -->
+  <p class="about-note">SiriScore is a free, open-source Bitcoin privacy tool. Paste a PSBT, raw transaction, or txid to see what chain analysis software would see.</p>
 </div>
 
 <!-- ── Mobile Footer -->
