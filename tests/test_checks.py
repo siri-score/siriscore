@@ -2,14 +2,14 @@
 from tests.test_parser import _sample_psbt_b64, _sample_rawtx_hex
 
 
-def test_score_returns_all_thirteen_checks():
+def test_score_returns_all_fourteen_checks():
     from scorer import score
 
     report = score(_sample_psbt_b64())
 
-    assert len(report.checks) == 13
+    assert len(report.checks) == 14
     assert [check.heuristic_id for check in report.checks] == [
-        "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H13", "H14",
+        "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H13", "H14", "H15",
     ]
 
 
@@ -51,6 +51,7 @@ def test_missing_input_metadata_marks_checks_unavailable(monkeypatch):
     assert checks["H1"].status == "unavailable"
     assert checks["H3"].status == "unavailable"
     assert checks["H6"].status == "unavailable"
+    assert checks["H15"].status == "unavailable"
     assert checks["H1"].reason == "Input script types unavailable"
 
 

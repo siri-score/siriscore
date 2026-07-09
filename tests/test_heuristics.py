@@ -560,3 +560,70 @@ class TestH14RBFSignalling:
         report = scorer._score_parsed(tx, {"version": 0})
 
         assert report.score == 95
+
+
+class TestH15FeeRateFingerprint:
+    _P2WPKH_SCRIPT = bytes.fromhex("0014" + "11" * 20)
+
+    def _input(self, value):
+        return MagicMock(value=value, script_pubkey=self._P2WPKH_SCRIPT)
+
+    def _output(self, value):
+        return MagicMock(value=value, script_pubkey=self._P2WPKH_SCRIPT)
+
+    def test_fires_on_round_fee_rate(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        # 1 p2wpkh input + 1 p2wpkh output -> estimated vsize = 11 + 68 + 31 = 110
+        # fee = 1000 - 890 = 110 -> fee_rate = 1.0 sat/vbyte
+        inp = self._input(1000)
+        out = self._output(890)
+
+        finding = check(_tx(inputs=[inp], outputs=[out]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H15"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 5
+        assert finding.positive is False
+        assert "1 sat/vbyte" in finding.detail
+
+    def test_passes_on_non_round_fee_rate(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        # same vsize (110) -> fee = 407 -> fee_rate = 3.7 sat/vbyte
+        inp = self._input(1000)
+        out = self._output(593)
+
+        assert check(_tx(inputs=[inp], outputs=[out]), {}) is None
+
+    def test_unavailable_without_input_values(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        inp = self._input(None)
+        out = self._output(890)
+
+        assert check(_tx(inputs=[inp], outputs=[out]), {}) is None
+
+    def test_no_inputs_returns_none(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        assert check(_tx(inputs=[], outputs=[self._output(890)]), {}) is None
+
+    def test_score_deduction_is_exactly_five(self):
+        import scorer
+        from scorer.parser import ParsedTx, TxInput, TxOutput
+
+        tx = ParsedTx(
+            version=2,
+            inputs=[
+                TxInput("a" * 64, 0, b"", 0xFFFFFFFF, script_pubkey=self._P2WPKH_SCRIPT, value=1000),
+            ],
+            outputs=[TxOutput(890, self._P2WPKH_SCRIPT)],
+            locktime=1,
+        )
+        report = scorer._score_parsed(tx, {"version": 0})
+
+        assert report.score == 95
+        h15_checks = [c for c in report.checks if c.heuristic_id == "H15"]
+        assert h15_checks and h15_checks[0].status == "fail"
