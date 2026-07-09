@@ -24,6 +24,7 @@ _HEURISTIC_DEFS = [
     ("H11", Severity.INFO,     "Payjoin opportunity available"),
     ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check"),
     ("H14", Severity.INFO,     "Replace-By-Fee (RBF) Signalling Fingerprint"),
+    ("H15", Severity.INFO,     "Fee Rate Fingerprint"),
 ]
 
 _NETWORK_IDS = {"H3", "H4"}
@@ -182,6 +183,9 @@ def _unavailable_reason(heuristic_id: str, tx) -> str:
         return "Input prevout data unavailable"
 
     if heuristic_id == "H6" and not any(getattr(i, "value", None) is not None for i in tx.inputs):
+        return "Input values unavailable"
+
+    if heuristic_id == "H15" and not all(getattr(i, "value", None) is not None for i in tx.inputs):
         return "Input values unavailable"
 
     return ""
