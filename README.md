@@ -54,11 +54,11 @@ uvicorn api.main:app --reload
 
 ## Heuristics
 
-Eleven privacy checks across two categories:
+Fourteen privacy checks across two categories:
 
 | Category | IDs | What they catch |
 |----------|-----|----------------|
-| Penalty  | H1–H8 | Script mismatch, round amounts, address reuse, UTXO age clustering, high input count, dust, non-BIP69 ordering, tainted labels |
+| Penalty  | H1–H8, H13–H15 | Script mismatch, round amounts, address reuse, UTXO age clustering, high input count, dust, non-BIP69 ordering, tainted labels, anti-fee-sniping nLockTime, mixed RBF signalling, round fee rates |
 | Positive | H9–H11 | Coinjoin inputs, coinjoin structure (+10 score bonus), Payjoin opportunity |
 
 Full heuristic reference at [docs.siriscore.xyz/heuristics](https://docs.siriscore.xyz/heuristics).
