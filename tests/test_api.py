@@ -42,6 +42,60 @@ def test_score_defaults_to_no_network_lookup(tmp_path, monkeypatch):
     assert checks["H4"] in ("skipped", "unavailable")
 
 
+def test_list_heuristics_returns_200():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_list_heuristics_contains_all_implemented_heuristics():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    ids = {h["id"] for h in response.json()["heuristics"]}
+    expected = {f"H{n}" for n in range(1, 16) if n != 12}
+    assert ids == expected
+
+
+def test_list_heuristics_entries_have_required_fields():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    required_fields = {
+        "id", "name", "severity", "weight",
+        "requires_network", "description", "suggestion",
+    }
+    for entry in response.json()["heuristics"]:
+        assert required_fields <= entry.keys()
+        assert isinstance(entry["id"], str)
+        assert isinstance(entry["name"], str)
+        assert entry["severity"] in {"critical", "warning", "info"}
+        assert isinstance(entry["weight"], int)
+        assert isinstance(entry["requires_network"], bool)
+        assert isinstance(entry["description"], str) and entry["description"]
+        assert isinstance(entry["suggestion"], str) and entry["suggestion"]
+
+
+def test_list_heuristics_flags_network_heuristics():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    by_id = {h["id"]: h for h in response.json()["heuristics"]}
+    assert by_id["H3"]["requires_network"] is True
+    assert by_id["H4"]["requires_network"] is True
+    assert by_id["H1"]["requires_network"] is False
+
+
+def test_list_heuristics_requires_no_body():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    assert response.status_code == 200
+    assert len(response.json()["heuristics"]) > 0
+
+
 def test_score_returns_only_matching_input_labels(tmp_path, monkeypatch):
     import scorer.labels as labels_mod
     from tests.test_parser import _sample_psbt_b64, P2WPKH_SCRIPT

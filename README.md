@@ -63,6 +63,30 @@ Fourteen privacy checks across two categories:
 
 Full heuristic reference at [docs.siriscore.xyz/heuristics](https://docs.siriscore.xyz/heuristics).
 
+### `GET /heuristics`
+
+Returns static metadata for every implemented heuristic — no transaction input required, no checks are executed. Useful for wallet developers who want to discover available privacy checks (id, severity, weight, network requirement) without reading the source.
+
+```bash
+curl http://localhost:8000/heuristics
+```
+
+```json
+{
+  "heuristics": [
+    {
+      "id": "H1",
+      "name": "Script type mismatch",
+      "severity": "critical",
+      "weight": 25,
+      "requires_network": false,
+      "description": "Detects when output script types differ from all input script types, making the change output trivially identifiable.",
+      "suggestion": "Ensure all outputs use the same script type as inputs, or match the recipient's script type."
+    }
+  ]
+}
+```
+
 ---
 
 ## Contributing
