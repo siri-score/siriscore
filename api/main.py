@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import tempfile
 import os
 
-from scorer import score_as as _score_as, import_labels
+from scorer import score_as as _score_as, import_labels, list_heuristics as _list_heuristics
 from scorer.labels import get_all_labels, add_label, init_db
 
 app = FastAPI(title="SiriScore API")
@@ -90,6 +90,12 @@ def score_tx(req: ScoreRequest):
         ],
         "labels": report.labels,
     }
+
+
+@app.get("/heuristics")
+def list_heuristics():
+    """Static metadata for every implemented heuristic — no tx input, no execution."""
+    return {"heuristics": _list_heuristics()}
 
 
 @app.post("/labels/import")

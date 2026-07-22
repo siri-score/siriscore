@@ -11,23 +11,68 @@ _H8_SCORE_CAP = 40
 _COINJOIN_SUPPRESSORS = {"H9", "H10"}
 
 _HEURISTIC_DEFS = [
-    ("H1",  Severity.CRITICAL, "Script type mismatch"),
-    ("H2",  Severity.WARNING,  "Round payment amount"),
-    ("H3",  Severity.CRITICAL, "Address reuse on input"),
-    ("H4",  Severity.WARNING,  "UTXO age clustering"),
-    ("H5",  Severity.WARNING,  "High input count consolidation"),
-    ("H6",  Severity.WARNING,  "Dust input present"),
-    ("H7",  Severity.INFO,     "Non-BIP69 input/output ordering"),
-    ("H8",  Severity.CRITICAL, "Labelled tainted UTXO in inputs"),
-    ("H9",  Severity.INFO,     "Input is a coinjoin output"),
-    ("H10", Severity.INFO,     "Transaction is a coinjoin"),
-    ("H11", Severity.INFO,     "Payjoin opportunity available"),
-    ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check"),
-    ("H14", Severity.INFO,     "Replace-By-Fee (RBF) Signalling Fingerprint"),
-    ("H15", Severity.INFO,     "Fee Rate Fingerprint"),
+    # id,   severity,          title,                                       weight, description, suggestion
+    ("H1",  Severity.CRITICAL, "Script type mismatch", 25,
+     "Detects when output script types differ from all input script types, making the change output trivially identifiable.",
+     "Ensure all outputs use the same script type as inputs, or match the recipient's script type."),
+    ("H2",  Severity.WARNING,  "Round payment amount", 15,
+     "Flags round-numbered output values that reveal the human-entered payment amount and expose the change output.",
+     "Add a small random offset to the payment amount when possible."),
+    ("H3",  Severity.CRITICAL, "Address reuse on input", 20,
+     "Detects when an input address has prior on-chain history, indicating address reuse.",
+     "Never reuse addresses. Generate a fresh address per receive; use a silent payment address where the recipient supports it to eliminate reuse permanently."),
+    ("H4",  Severity.WARNING,  "UTXO age clustering", 10,
+     "Detects inputs confirmed within a narrow block range, suggesting they originated from the same source event.",
+     "Mix UTXOs from different time periods to break clustering."),
+    ("H5",  Severity.WARNING,  "High input count consolidation", 10,
+     "Flags transactions with a high input count, a strong Common Input Ownership Heuristic (CIOH) signal.",
+     "Avoid consolidating many UTXOs in a single transaction. Consider using a coinjoin instead."),
+    ("H6",  Severity.WARNING,  "Dust input present", 10,
+     "Flags spending of dust-value inputs, which may be part of a dust attack used to deanonymize a wallet.",
+     "Avoid spending dust inputs. Consider ignoring them or sweeping them via a coinjoin."),
+    ("H7",  Severity.INFO,     "Non-BIP69 input/output ordering", 5,
+     "Flags input/output ordering that does not follow BIP-69 lexicographic ordering, a wallet fingerprint.",
+     "Implement BIP-69 lexicographic ordering before signing."),
+    ("H8",  Severity.CRITICAL, "Labelled tainted UTXO in inputs", 25,
+     "Flags inputs matching a locally labelled UTXO (e.g. tainted provenance) and caps the final score.",
+     "Review the label before spending this input with other coins. Avoid mixing sensitive provenance with clean UTXOs."),
+    ("H9",  Severity.INFO,     "Input is a coinjoin output", 0,
+     "Detects when an input is itself a coinjoin output (labelled or Whirlpool denomination), which breaks CIOH.",
+     "No action needed — spending coinjoin outputs is privacy-positive."),
+    ("H10", Severity.INFO,     "Transaction is a coinjoin", -10,
+     "Detects whether the transaction being scored matches a known coinjoin structure (Whirlpool, Wasabi, JoinMarket).",
+     "No action needed — participating in a coinjoin is the strongest available on-chain privacy technique."),
+    ("H11", Severity.INFO,     "Payjoin opportunity available", 0,
+     "Detects a BIP-77 Payjoin endpoint in the payment URI and reports an opportunity to break CIOH.",
+     "Use your wallet's BIP-77 Payjoin support to send a Payjoin instead of a standard transaction."),
+    ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check", 5,
+     "Flags transactions with nLockTime set to 0, missing the anti-fee-sniping convention most wallets use.",
+     "Use a wallet that sets nLockTime to the current tip height."),
+    ("H14", Severity.INFO,     "Replace-By-Fee (RBF) Signalling Fingerprint", 0,
+     "Checks whether all transaction inputs signal Replace-By-Fee consistently via nSequence.",
+     "Use a wallet that sets nSequence consistently (all-RBF or all-final) across every input."),
+    ("H15", Severity.INFO,     "Fee Rate Fingerprint", 5,
+     "Flags a fee rate that is a round sat/vbyte number, which can fingerprint the wallet's fee estimation.",
+     "Use a wallet with dynamic fee estimation (mempool-based) rather than round defaults."),
 ]
 
 _NETWORK_IDS = {"H3", "H4"}
+
+
+def list_heuristics() -> list[dict]:
+    """Static metadata for every implemented heuristic. No tx input, no execution."""
+    return [
+        {
+            "id": heuristic_id,
+            "name": title,
+            "severity": severity.value,
+            "weight": weight,
+            "requires_network": heuristic_id in _NETWORK_IDS,
+            "description": description,
+            "suggestion": suggestion,
+        }
+        for heuristic_id, severity, title, weight, description, suggestion in _HEURISTIC_DEFS
+    ]
 
 
 def score(
@@ -127,7 +172,7 @@ def _build_checks(tx, findings: list[Finding], lookup: bool, backend=None) -> li
     coinjoin_fired = any(hid in findings_by_id for hid in _COINJOIN_SUPPRESSORS)
     checks = []
 
-    for heuristic_id, severity, title in _HEURISTIC_DEFS:
+    for heuristic_id, severity, title, _weight, _description, _suggestion in _HEURISTIC_DEFS:
         finding = findings_by_id.get(heuristic_id)
 
         # Positive findings (H9, H10) show as "pass" with a positive note
