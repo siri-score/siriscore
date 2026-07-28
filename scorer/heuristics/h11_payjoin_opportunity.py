@@ -1,4 +1,5 @@
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
 from scorer.report import Finding, Severity
 
 # Mirror h5_consolidation threshold so H11 can detect when H5 would fire
@@ -61,6 +62,6 @@ def _extract_pj_endpoint(uri: str) -> str | None:
         pj = params.get("pj")
         if pj:
             return pj[0]
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
     return None

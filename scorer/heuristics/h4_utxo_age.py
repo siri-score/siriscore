@@ -1,5 +1,5 @@
-from scorer.report import Finding, Severity
 from scorer.lookup import get_utxo_block_height
+from scorer.report import Finding, Severity
 
 NARROW_RANGE = 6  # blocks — inputs within this range suggest clustering
 MAX_UTXO_HEIGHT_LOOKUPS = 8
@@ -19,7 +19,7 @@ def check(tx, psbt_meta) -> Finding | None:
         seen_txids.add(inp.txid)
         try:
             h = _get(inp.txid)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         if h is not None:
             heights.append(h)

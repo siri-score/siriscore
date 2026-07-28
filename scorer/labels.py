@@ -1,9 +1,8 @@
-import sqlite3
 import json
-from pathlib import Path
-from json import JSONDecodeError
-
 import os
+import sqlite3
+from json import JSONDecodeError
+from pathlib import Path
 
 
 def _default_db_path() -> Path:

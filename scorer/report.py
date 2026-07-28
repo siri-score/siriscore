@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List
 from enum import Enum
 
 
@@ -32,10 +31,10 @@ class Check:
 @dataclass
 class Report:
     score: int
-    findings: List[Finding]
-    checks: List[Check]
+    findings: list[Finding]
+    checks: list[Check]
     input_count: int
     output_count: int
     psbt_version: int
-    warnings: List[str] = field(default_factory=list)
-    labels: List[dict] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    labels: list[dict] = field(default_factory=list)

@@ -36,7 +36,7 @@ def test_failed_checks_carry_finding_detail_as_reason():
 
 
 def test_missing_input_metadata_marks_checks_unavailable(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
     from scorer import score
 
     monkeypatch.setattr(
@@ -89,12 +89,10 @@ def test_score_as_psbt_offline_makes_no_lookup_calls(monkeypatch):
 
 
 def test_score_as_rawtx_with_lookup_enriches_prevouts(monkeypatch):
-    import scorer.parser as parser
-    from tests.test_parser import _sample_prevtx_hex
-    from scorer import score_as
-
     import scorer.heuristics.h3_address_reuse as h3
     import scorer.heuristics.h4_utxo_age as h4
+    from scorer import parser, score_as
+    from tests.test_parser import _sample_prevtx_hex
 
     monkeypatch.setattr(parser, "get_tx_hex", lambda txid: _sample_prevtx_hex())
     monkeypatch.setattr(h3, "get_address_txs", lambda address: [])
