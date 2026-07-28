@@ -36,8 +36,7 @@ def test_failed_checks_carry_finding_detail_as_reason():
 
 
 def test_missing_input_metadata_marks_checks_unavailable(monkeypatch):
-    from scorer import parser
-    from scorer import score
+    from scorer import parser, score
 
     monkeypatch.setattr(
         parser,
