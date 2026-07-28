@@ -92,6 +92,7 @@ def test_successful_mempool_response_does_not_call_blockstream(monkeypatch):
         return _Response(payload={"txid": "btc"})
 
     monkeypatch.setattr(lookup, "_cache", {})
+    monkeypatch.setattr(lookup, "_hex_cache", {})
     monkeypatch.setattr(requests, "get", fake_get)
 
     lookup.get_tx("btc")
