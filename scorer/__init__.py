@@ -1,11 +1,10 @@
 """utxo-privacy-scorer — public API."""
-from scorer.parser import parse
-from scorer.parser import parse_as
-from scorer.report import Report, Finding, Severity, Check
-from scorer.labels import init_db, import_sparrow
-from scorer.labels import get_input_label
-from scorer.heuristics import LOCAL as _LOCAL, NETWORK as _NETWORK
+from scorer.heuristics import LOCAL as _LOCAL
+from scorer.heuristics import NETWORK as _NETWORK
 from scorer.heuristics.h1_script_mismatch import classify_script
+from scorer.labels import get_input_label, import_sparrow, init_db
+from scorer.parser import parse, parse_as
+from scorer.report import Check, Finding, Report, Severity
 
 _H8_SCORE_CAP = 40
 _COINJOIN_SUPPRESSORS = {"H9", "H10"}

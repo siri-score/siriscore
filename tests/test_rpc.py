@@ -283,8 +283,8 @@ class TestScoreAPI:
             score(self._psbt(), lookup="rpc")
 
     def test_score_lookup_rpc_creates_rpc_backend(self, monkeypatch):
-        from scorer import score
         from scorer import rpc as rpc_module
+        from scorer import score
 
         created = []
 
@@ -361,8 +361,9 @@ class TestBuildChecksRPCBackend:
 
     def test_h3_skipped_when_no_lookup_and_address_present(self):
         """When addresses are available but lookup=False, H3 must be 'skipped'."""
-        from scorer import _build_checks
         from unittest.mock import MagicMock
+
+        from scorer import _build_checks
 
         tx = MagicMock()
         inp = MagicMock()

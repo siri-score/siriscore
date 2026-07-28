@@ -10,8 +10,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from scorer import score_as as _score_as, import_labels
-from scorer.labels import get_all_labels, add_label, init_db
+from scorer import import_labels
+from scorer import score_as as _score_as
+from scorer.labels import add_label, get_all_labels, init_db
 
 app = FastAPI(title="SiriScore API")
 init_db()
