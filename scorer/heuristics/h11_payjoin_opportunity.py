@@ -61,6 +61,6 @@ def _extract_pj_endpoint(uri: str) -> str | None:
         pj = params.get("pj")
         if pj:
             return pj[0]
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
     return None

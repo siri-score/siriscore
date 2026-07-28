@@ -25,7 +25,7 @@ def check(tx, psbt_meta) -> Finding | None:
         checked += 1
         try:
             txs = _get(address)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         if len(txs) > 1:
             if _output_supports_sp(tx):
