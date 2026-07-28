@@ -1,11 +1,10 @@
 """utxo-privacy-scorer — public API."""
-from scorer.parser import parse
-from scorer.parser import parse_as
-from scorer.report import Report, Finding, Severity, Check
-from scorer.labels import init_db, import_sparrow
-from scorer.labels import get_input_label
-from scorer.heuristics import LOCAL as _LOCAL, NETWORK as _NETWORK
+from scorer.heuristics import LOCAL as _LOCAL
+from scorer.heuristics import NETWORK as _NETWORK
 from scorer.heuristics.h1_script_mismatch import classify_script
+from scorer.labels import get_input_label, import_sparrow, init_db
+from scorer.parser import parse, parse_as
+from scorer.report import Check, Finding, Report, Severity
 
 _H8_SCORE_CAP = 40
 _COINJOIN_SUPPRESSORS = {"H9", "H10"}
@@ -23,6 +22,8 @@ _HEURISTIC_DEFS = [
     ("H10", Severity.INFO,     "Transaction is a coinjoin"),
     ("H11", Severity.INFO,     "Payjoin opportunity available"),
     ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check"),
+    ("H14", Severity.INFO,     "Replace-By-Fee (RBF) Signalling Fingerprint"),
+    ("H15", Severity.INFO,     "Fee Rate Fingerprint"),
 ]
 
 _NETWORK_IDS = {"H3", "H4"}
@@ -181,6 +182,9 @@ def _unavailable_reason(heuristic_id: str, tx) -> str:
         return "Input prevout data unavailable"
 
     if heuristic_id == "H6" and not any(getattr(i, "value", None) is not None for i in tx.inputs):
+        return "Input values unavailable"
+
+    if heuristic_id == "H15" and not all(getattr(i, "value", None) is not None for i in tx.inputs):
         return "Input values unavailable"
 
     return ""

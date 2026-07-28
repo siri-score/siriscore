@@ -6,7 +6,6 @@ import requests
 
 from scorer.rpc import RPCBackend, RPCError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -283,8 +282,8 @@ class TestScoreAPI:
             score(self._psbt(), lookup="rpc")
 
     def test_score_lookup_rpc_creates_rpc_backend(self, monkeypatch):
-        from scorer import score
         from scorer import rpc as rpc_module
+        from scorer import score
 
         created = []
 
@@ -335,7 +334,7 @@ class TestBuildChecksRPCBackend:
     def _psbt_tx(self):
         from scorer.parser import parse
         from tests.test_parser import _sample_psbt_b64
-        tx, meta = parse(_sample_psbt_b64())
+        tx, _meta = parse(_sample_psbt_b64())
         return tx
 
     def test_h3_unavailable_with_rpc_backend(self):
@@ -361,8 +360,9 @@ class TestBuildChecksRPCBackend:
 
     def test_h3_skipped_when_no_lookup_and_address_present(self):
         """When addresses are available but lookup=False, H3 must be 'skipped'."""
-        from scorer import _build_checks
         from unittest.mock import MagicMock
+
+        from scorer import _build_checks
 
         tx = MagicMock()
         inp = MagicMock()
@@ -401,8 +401,8 @@ class TestCLIRPCArgs:
             from scorer.report import Report
             mock_score = Report(score=80, findings=[], checks=[], input_count=1,
                                 output_count=1, psbt_version=0)
-        with patch("sys.argv", ["btc-privacy-check", "--psbt", "cHNidP8BA", *extra_args]):
-            with patch("cli.score", return_value=mock_score) as mock:
+        with patch("sys.argv", ["btc-privacy-check", "--psbt", "cHNidP8BA", *extra_args]), \
+                patch("cli.score", return_value=mock_score) as mock:
                 try:
                     main()
                 except SystemExit:

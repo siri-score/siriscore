@@ -1,6 +1,6 @@
-from scorer.report import Finding, Severity
 from scorer.lookup import get_address_txs
 from scorer.parser import script_to_address
+from scorer.report import Finding, Severity
 from scorer.utils import is_silent_payment_address
 
 MAX_ADDRESS_LOOKUPS = 5
@@ -25,7 +25,7 @@ def check(tx, psbt_meta) -> Finding | None:
         checked += 1
         try:
             txs = _get(address)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         if len(txs) > 1:
             if _output_supports_sp(tx):

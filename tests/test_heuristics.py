@@ -1,6 +1,8 @@
 """Unit tests for each heuristic module (one test per heuristic)."""
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from scorer.report import Severity
 
 
@@ -176,7 +178,6 @@ class TestH4UtxoAge:
 
         def fake_get_utxo_block_height(txid):
             calls.append(txid)
-            return None
 
         monkeypatch.setattr(h4_utxo_age, "get_utxo_block_height", fake_get_utxo_block_height)
         inputs = [MagicMock(txid=f"{i:064x}") for i in range(20)]
@@ -268,7 +269,7 @@ class TestH9CoinJoinInput:
         assert finding.weight == 0
 
     def test_fires_on_all_whirlpool_denominations(self):
-        from scorer.heuristics.h9_coinjoin_input import check, WHIRLPOOL_DENOMS
+        from scorer.heuristics.h9_coinjoin_input import WHIRLPOOL_DENOMS, check
 
         for denom in WHIRLPOOL_DENOMS:
             inp = MagicMock(txid="b" * 64, vout=0, value=denom, address=None)
@@ -357,8 +358,9 @@ class TestH10CoinJoinTx:
 
 class TestCoinJoinH5Suppression:
     def test_h9_suppresses_h5(self):
-        import scorer
         from unittest.mock import patch
+
+        import scorer
 
         with patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9, \
              patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
@@ -379,8 +381,9 @@ class TestCoinJoinH5Suppression:
             assert "H9" in h5_ids
 
     def test_h10_applies_score_bonus(self):
-        import scorer
         from unittest.mock import patch
+
+        import scorer
 
         with patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
              patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9:
@@ -485,10 +488,12 @@ class TestH13NLocktime:
         assert check(tx, {}) is None
 
     def test_score_deduction_is_exactly_five(self):
-        import scorer
         from unittest.mock import patch
-        from scorer.report import Finding, Severity as Sev
+
+        import scorer
         from scorer.parser import ParsedTx, TxInput
+        from scorer.report import Finding
+        from scorer.report import Severity as Sev
 
         with patch("scorer.heuristics.h13_nlocktime.check") as mock_h13:
             mock_h13.return_value = Finding("H13", Sev.INFO, "nLockTime", "d", "s", 5)
@@ -500,3 +505,130 @@ class TestH13NLocktime:
             report = scorer._score_parsed(tx, {"version": 0})
 
         assert report.score == 95
+
+
+class TestH14RBFSignalling:
+    def test_all_inputs_signal_rbf(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFD), MagicMock(sequence=0)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 0
+        assert finding.positive is True
+
+    def test_mixed_signalling_fires_warning(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFD), MagicMock(sequence=0xFFFFFFFF)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.WARNING
+        assert finding.weight == 5
+        assert finding.positive is False
+
+    def test_no_inputs_signal_rbf(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        inputs = [MagicMock(sequence=0xFFFFFFFF), MagicMock(sequence=0xFFFFFFFE)]
+        finding = check(_tx(inputs=inputs), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H14"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 0
+        assert finding.positive is True
+
+    def test_no_inputs_returns_none(self):
+        from scorer.heuristics.h14_rbf_signalling import check
+
+        assert check(_tx(inputs=[]), {}) is None
+
+    def test_score_deduction_is_exactly_five_on_mixed_signalling(self):
+        import scorer
+        from scorer.parser import ParsedTx, TxInput
+
+        tx = ParsedTx(
+            version=2,
+            inputs=[
+                TxInput("a" * 64, 0, b"", 0xFFFFFFFD),
+                TxInput("b" * 64, 1, b"", 0xFFFFFFFF),
+            ],
+            outputs=[],
+            locktime=850_000,
+        )
+        report = scorer._score_parsed(tx, {"version": 0})
+
+        assert report.score == 95
+
+
+class TestH15FeeRateFingerprint:
+    _P2WPKH_SCRIPT = bytes.fromhex("0014" + "11" * 20)
+
+    def _input(self, value):
+        return MagicMock(value=value, script_pubkey=self._P2WPKH_SCRIPT)
+
+    def _output(self, value):
+        return MagicMock(value=value, script_pubkey=self._P2WPKH_SCRIPT)
+
+    def test_fires_on_round_fee_rate(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        # 1 p2wpkh input + 1 p2wpkh output -> estimated vsize = 11 + 68 + 31 = 110
+        # fee = 1000 - 890 = 110 -> fee_rate = 1.0 sat/vbyte
+        inp = self._input(1000)
+        out = self._output(890)
+
+        finding = check(_tx(inputs=[inp], outputs=[out]), {})
+
+        assert finding is not None
+        assert finding.heuristic_id == "H15"
+        assert finding.severity == Severity.INFO
+        assert finding.weight == 5
+        assert finding.positive is False
+        assert "1 sat/vbyte" in finding.detail
+
+    def test_passes_on_non_round_fee_rate(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        # same vsize (110) -> fee = 407 -> fee_rate = 3.7 sat/vbyte
+        inp = self._input(1000)
+        out = self._output(593)
+
+        assert check(_tx(inputs=[inp], outputs=[out]), {}) is None
+
+    def test_unavailable_without_input_values(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        inp = self._input(None)
+        out = self._output(890)
+
+        assert check(_tx(inputs=[inp], outputs=[out]), {}) is None
+
+    def test_no_inputs_returns_none(self):
+        from scorer.heuristics.h15_fee_rate import check
+
+        assert check(_tx(inputs=[], outputs=[self._output(890)]), {}) is None
+
+    def test_score_deduction_is_exactly_five(self):
+        import scorer
+        from scorer.parser import ParsedTx, TxInput, TxOutput
+
+        tx = ParsedTx(
+            version=2,
+            inputs=[
+                TxInput("a" * 64, 0, b"", 0xFFFFFFFF, script_pubkey=self._P2WPKH_SCRIPT, value=1000),
+            ],
+            outputs=[TxOutput(890, self._P2WPKH_SCRIPT)],
+            locktime=1,
+        )
+        report = scorer._score_parsed(tx, {"version": 0})
+
+        assert report.score == 95
+        h15_checks = [c for c in report.checks if c.heuristic_id == "H15"]
+        assert h15_checks and h15_checks[0].status == "fail"

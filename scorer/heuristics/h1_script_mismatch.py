@@ -20,7 +20,7 @@ def check(tx, psbt_meta) -> Finding | None:
             severity=Severity.CRITICAL,
             title="Script type mismatch",
             detail=(
-                f"Inputs are {list(input_types)[0]}. "
+                f"Inputs are {next(iter(input_types))}. "
                 f"Output(s) use {mismatched}. "
                 f"Change output is trivially identifiable."
             ),
