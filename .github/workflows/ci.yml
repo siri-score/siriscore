@@ -24,7 +24,7 @@ jobs:
         run: python3 -m pytest -q --tb=short
 
       - name: Lint with ruff
-        run: ruff check scorer/ api/ tests/
+        run: python3 -m ruff check scorer/ api/ tests/
 
       - name: Build wheel
         run: |

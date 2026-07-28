@@ -1,6 +1,6 @@
-from scorer.report import Finding, Severity
 from scorer.lookup import get_address_txs
 from scorer.parser import script_to_address
+from scorer.report import Finding, Severity
 from scorer.utils import is_silent_payment_address
 
 MAX_ADDRESS_LOOKUPS = 5

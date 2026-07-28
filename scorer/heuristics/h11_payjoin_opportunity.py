@@ -1,4 +1,5 @@
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
 from scorer.report import Finding, Severity
 
 # Mirror h5_consolidation threshold so H11 can detect when H5 would fire

@@ -1,5 +1,5 @@
-from scorer.report import Finding, Severity
 from scorer.lookup import get_utxo_block_height
+from scorer.report import Finding, Severity
 
 NARROW_RANGE = 6  # blocks — inputs within this range suggest clustering
 MAX_UTXO_HEIGHT_LOOKUPS = 8
