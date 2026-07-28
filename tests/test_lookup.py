@@ -80,3 +80,59 @@ def test_get_tx_uses_mempool_first(monkeypatch):
     lookup.get_tx("abc")
 
     assert calls == ["https://mempool.space/api/tx/abc"]
+
+
+def test_successful_mempool_response_does_not_call_blockstream(monkeypatch):
+    from scorer import lookup
+
+    calls = []
+
+    def fake_get(url, timeout):
+        calls.append(url)
+        return _Response(payload={"txid": "btc"})
+
+    monkeypatch.setattr(lookup, "_cache", {})
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    lookup.get_tx("btc")
+
+    assert len(calls) == 1
+    assert calls[0].startswith("https://mempool.space")
+
+
+def test_get_tx_hex_uses_mempool_before_blockstream(monkeypatch):
+    from scorer import lookup
+
+    calls = []
+
+    def fake_get(url, timeout):
+        calls.append(url)
+        if url.endswith("/hex"):
+            return _Response(text="02000000")
+        return _Response(payload={})
+
+    monkeypatch.setattr(lookup, "_cache", {})
+    monkeypatch.setattr(lookup, "_hex_cache", {})
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    assert lookup.get_tx_hex("btc") == "02000000"
+    assert calls == [
+        "https://mempool.space/api/tx/btc",
+        "https://mempool.space/api/tx/btc/hex",
+    ]
+
+
+def test_get_address_txs_uses_mempool_first(monkeypatch):
+    from scorer import lookup
+
+    calls = []
+
+    def fake_get(url, timeout):
+        calls.append(url)
+        return _Response(payload=[])
+
+    monkeypatch.setattr(lookup, "_address_cache", {})
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    assert lookup.get_address_txs("bc1qexample") == []
+    assert calls == ["https://mempool.space/api/address/bc1qexample/txs"]
