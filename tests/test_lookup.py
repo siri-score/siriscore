@@ -17,7 +17,7 @@ class _Response:
 
 
 def test_get_tx_falls_back_to_blockstream(monkeypatch):
-    import scorer.lookup as lookup
+    from scorer import lookup
 
     calls = []
 
@@ -40,7 +40,7 @@ def test_get_tx_falls_back_to_blockstream(monkeypatch):
 
 
 def test_get_tx_hex_falls_back_to_blockstream(monkeypatch):
-    import scorer.lookup as lookup
+    from scorer import lookup
 
     calls = []
 
@@ -66,7 +66,7 @@ def test_get_tx_hex_falls_back_to_blockstream(monkeypatch):
 
 
 def test_get_tx_uses_mempool_first(monkeypatch):
-    import scorer.lookup as lookup
+    from scorer import lookup
 
     calls = []
 

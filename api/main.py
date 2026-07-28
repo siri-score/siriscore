@@ -1,13 +1,14 @@
 """FastAPI backend for SiriScore web UI."""
-from pathlib import Path
 import logging
-import time
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-import tempfile
 import os
+import tempfile
+import time
+from pathlib import Path
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from scorer import score_as as _score_as, import_labels
 from scorer.labels import get_all_labels, add_label, init_db
