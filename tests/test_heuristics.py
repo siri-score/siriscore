@@ -379,8 +379,9 @@ class TestCoinJoinH5Suppression:
             assert "H9" in h5_ids
 
     def test_h10_applies_score_bonus(self):
-        import scorer
         from unittest.mock import patch
+
+        import scorer
 
         with patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
              patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9:
@@ -485,10 +486,11 @@ class TestH13NLocktime:
         assert check(tx, {}) is None
 
     def test_score_deduction_is_exactly_five(self):
-        import scorer
         from unittest.mock import patch
-        from scorer.report import Finding, Severity as Sev
+
+        import scorer
         from scorer.parser import ParsedTx, TxInput
+        from scorer.report import Finding, Severity as Sev
 
         with patch("scorer.heuristics.h13_nlocktime.check") as mock_h13:
             mock_h13.return_value = Finding("H13", Sev.INFO, "nLockTime", "d", "s", 5)
