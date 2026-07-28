@@ -40,7 +40,7 @@ def score_tx(req: ScoreRequest):
     logger.info("score.start input_type=%s preview=%s...", req.input_type, preview)
     try:
         report = _score_as(req.input, req.input_type, lookup=req.lookup)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         elapsed_ms = (time.perf_counter() - started) * 1000
         logger.warning(
             "score.error input_type=%s elapsed_ms=%.1f error=%s",
@@ -94,7 +94,7 @@ def score_tx(req: ScoreRequest):
 
 
 @app.post("/labels/import")
-async def import_labels_endpoint(file: UploadFile = File(...)):
+async def import_labels_endpoint(file: UploadFile = File(...)):  # noqa: B008
     contents = await file.read()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
         tmp.write(contents)

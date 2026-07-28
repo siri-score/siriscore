@@ -225,7 +225,7 @@ def _enrich_prevouts(tx: ParsedTx, backend=None) -> None:
             else:
                 prev_hex = get_tx_hex(txin.txid)
             prev_tx, _ = _parse_rawtx(prev_hex, enrich_prevouts=False)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
 
         if txin.vout >= len(prev_tx.outputs):

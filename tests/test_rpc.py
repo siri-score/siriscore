@@ -335,7 +335,7 @@ class TestBuildChecksRPCBackend:
     def _psbt_tx(self):
         from scorer.parser import parse
         from tests.test_parser import _sample_psbt_b64
-        tx, meta = parse(_sample_psbt_b64())
+        tx, _meta = parse(_sample_psbt_b64())
         return tx
 
     def test_h3_unavailable_with_rpc_backend(self):
@@ -401,8 +401,8 @@ class TestCLIRPCArgs:
             from scorer.report import Report
             mock_score = Report(score=80, findings=[], checks=[], input_count=1,
                                 output_count=1, psbt_version=0)
-        with patch("sys.argv", ["btc-privacy-check", "--psbt", "cHNidP8BA", *extra_args]):
-            with patch("cli.score", return_value=mock_score) as mock:
+        with patch("sys.argv", ["btc-privacy-check", "--psbt", "cHNidP8BA", *extra_args]), \
+                patch("cli.score", return_value=mock_score) as mock:
                 try:
                     main()
                 except SystemExit:

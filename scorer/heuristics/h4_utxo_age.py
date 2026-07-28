@@ -19,7 +19,7 @@ def check(tx, psbt_meta) -> Finding | None:
         seen_txids.add(inp.txid)
         try:
             h = _get(inp.txid)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         if h is not None:
             heights.append(h)

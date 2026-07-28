@@ -33,7 +33,7 @@ Homepage = "https://github.com/siri-score/siriscore"
 Repository = "https://github.com/siri-score/siriscore"
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov", "ruff", "mypy", "build", "twine", "httpx"]
+dev = ["pytest>=8", "pytest-cov", "ruff>=0.16,<0.17", "mypy", "build", "twine", "httpx"]
 
 [project.scripts]
 btc-privacy-check = "cli:main"
@@ -45,3 +45,4 @@ include = ["scorer*", "api*", "siriscore*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
