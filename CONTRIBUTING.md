@@ -96,10 +96,12 @@ from scorer.heuristics import hN_name
 LOCAL = [..., hN_name]
 ```
 
-3. Add an entry to `_HEURISTIC_DEFS` in `scorer/__init__.py`:
+3. Add an entry to `_HEURISTIC_DEFS` in `scorer/__init__.py` — this also drives `GET /heuristics`:
 
 ```python
-("HN", Severity.WARNING, "Short title"),
+("HN", Severity.WARNING, "Short title", 10,
+ "What this heuristic detects, in general terms.",
+ "What the user should do about it."),
 ```
 
 4. Add tests in `tests/test_heuristics.py` — at minimum one test that fires and one that does not.

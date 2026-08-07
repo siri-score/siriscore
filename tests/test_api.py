@@ -42,6 +42,59 @@ def test_score_defaults_to_no_network_lookup(tmp_path, monkeypatch):
     assert checks["H4"] in ("skipped", "unavailable")
 
 
+_EXPECTED_HEURISTIC_IDS = {
+    "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8",
+    "H9", "H10", "H11", "H13", "H14", "H15",
+}
+
+
+def test_list_heuristics_returns_200_and_all_ids():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    assert response.status_code == 200
+    heuristics = response.json()["heuristics"]
+    assert {h["id"] for h in heuristics} == _EXPECTED_HEURISTIC_IDS
+
+
+def test_list_heuristics_entries_match_schema():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+    heuristics = response.json()["heuristics"]
+
+    expected_keys = {
+        "id", "name", "severity", "weight",
+        "requires_network", "description", "suggestion",
+    }
+    for h in heuristics:
+        assert set(h.keys()) == expected_keys
+        assert isinstance(h["id"], str)
+        assert isinstance(h["name"], str) and h["name"]
+        assert h["severity"] in ("critical", "warning", "info")
+        assert isinstance(h["weight"], int)
+        assert isinstance(h["requires_network"], bool)
+        assert isinstance(h["description"], str) and h["description"]
+        assert isinstance(h["suggestion"], str) and h["suggestion"]
+
+
+def test_list_heuristics_flags_network_dependent_ids():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+    by_id = {h["id"]: h for h in response.json()["heuristics"]}
+
+    assert by_id["H3"]["requires_network"] is True
+    assert by_id["H4"]["requires_network"] is True
+    assert by_id["H1"]["requires_network"] is False
+
+
+def test_list_heuristics_requires_no_request_body():
+    client = TestClient(app)
+    response = client.get("/heuristics")
+
+    assert response.status_code == 200
+    assert response.request.content == b""
+
+
 def test_score_returns_only_matching_input_labels(tmp_path, monkeypatch):
     import scorer.labels as labels_mod
     from scorer.parser import script_to_address

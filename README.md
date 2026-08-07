@@ -63,6 +63,8 @@ Fourteen privacy checks across two categories:
 
 Full heuristic reference at [docs.siriscore.xyz/heuristics](https://docs.siriscore.xyz/heuristics).
 
+`GET /heuristics` returns this same metadata as JSON — see [docs.siriscore.xyz/api](https://docs.siriscore.xyz/api) for the full REST API reference.
+
 ---
 
 ## Contributing

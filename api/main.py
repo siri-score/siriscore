@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from scorer import import_labels
+from scorer import list_heuristics as _list_heuristics
 from scorer import score_as as _score_as
 from scorer.labels import add_label, get_all_labels, init_db
 
@@ -92,6 +93,12 @@ def score_tx(req: ScoreRequest):
         ],
         "labels": report.labels,
     }
+
+
+@app.get("/heuristics")
+def list_heuristics():
+    """Static metadata for every implemented heuristic — no tx input, no execution."""
+    return {"heuristics": _list_heuristics()}
 
 
 @app.post("/labels/import")
