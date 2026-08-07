@@ -1,4 +1,5 @@
 from collections import Counter
+
 from scorer.report import Finding, Severity
 
 WHIRLPOOL_DENOMS = frozenset({100_000, 1_000_000, 5_000_000, 50_000_000})
@@ -30,7 +31,7 @@ def _is_wasabi(tx) -> bool:
     if len(tx.inputs) < WASABI_MIN_PEERS or len(tx.outputs) < WASABI_MIN_PEERS:
         return False
     value_counts = Counter(o.value for o in tx.outputs)
-    top_value, top_count = value_counts.most_common(1)[0]
+    _top_value, top_count = value_counts.most_common(1)[0]
     # Dominant equal-value output group, with enough inputs to fund participants
     return top_count >= WASABI_MIN_PEERS and len(tx.inputs) >= top_count
 

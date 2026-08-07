@@ -1,16 +1,18 @@
 """FastAPI backend for SiriScore web UI."""
-from pathlib import Path
 import logging
-import time
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-import tempfile
 import os
+import tempfile
+import time
+from pathlib import Path
 
-from scorer import score_as as _score_as, import_labels, list_heuristics as _list_heuristics
-from scorer.labels import get_all_labels, add_label, init_db
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from scorer import import_labels
+from scorer import score_as as _score_as
+from scorer.labels import add_label, get_all_labels, init_db
 
 app = FastAPI(title="SiriScore API")
 init_db()
@@ -39,7 +41,7 @@ def score_tx(req: ScoreRequest):
     logger.info("score.start input_type=%s preview=%s...", req.input_type, preview)
     try:
         report = _score_as(req.input, req.input_type, lookup=req.lookup)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         elapsed_ms = (time.perf_counter() - started) * 1000
         logger.warning(
             "score.error input_type=%s elapsed_ms=%.1f error=%s",
@@ -99,7 +101,7 @@ def list_heuristics():
 
 
 @app.post("/labels/import")
-async def import_labels_endpoint(file: UploadFile = File(...)):
+async def import_labels_endpoint(file: UploadFile = File(...)):  # noqa: B008
     contents = await file.read()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
         tmp.write(contents)

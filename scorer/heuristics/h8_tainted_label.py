@@ -1,5 +1,5 @@
-from scorer.report import Finding, Severity
 from scorer.labels import get_input_label
+from scorer.report import Finding, Severity
 
 TAINTED_SCORE_CAP = 40
 

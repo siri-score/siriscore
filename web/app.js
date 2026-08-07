@@ -82,9 +82,9 @@ const PLACEHOLDERS = {
   txid:  'a4f1c9d2e3b5a6f7890abc1234567890abcdef1234567890abcdef1234567890ab'
 };
 
-const CAPTION_LOOKUP = 'Input addresses are looked up via blockstream.info/mempool.space. Your PSBT is never transmitted.';
+const CAPTION_LOOKUP = 'Input addresses are looked up via mempool.space/blockstream.info. Your PSBT is never transmitted.';
 const CAPTION_NO_LOOKUP = 'Network checks disabled. No data leaves your machine.';
-const CAPTION_NO_LOOKUP_TXID = 'Network checks disabled. The txid itself is still fetched from blockstream.info/mempool.space.';
+const CAPTION_NO_LOOKUP_TXID = 'Network checks disabled. The txid itself is still fetched from mempool.space/blockstream.info.';
 
 // DOM refs
 const txInput        = document.getElementById('tx-input');

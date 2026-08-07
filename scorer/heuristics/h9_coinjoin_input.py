@@ -1,5 +1,5 @@
-from scorer.report import Finding, Severity
 from scorer.labels import get_input_label
+from scorer.report import Finding, Severity
 
 WHIRLPOOL_DENOMS = frozenset({100_000, 1_000_000, 5_000_000, 50_000_000})
 

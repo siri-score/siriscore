@@ -98,8 +98,8 @@ def test_list_heuristics_requires_no_body():
 
 def test_score_returns_only_matching_input_labels(tmp_path, monkeypatch):
     import scorer.labels as labels_mod
-    from tests.test_parser import _sample_psbt_b64, P2WPKH_SCRIPT
     from scorer.parser import script_to_address
+    from tests.test_parser import P2WPKH_SCRIPT, _sample_psbt_b64
 
     monkeypatch.setattr(labels_mod, "DB_PATH", tmp_path / "labels.db")
     labels_mod.init_db()

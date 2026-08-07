@@ -2,7 +2,6 @@
 import json
 from unittest.mock import patch
 
-
 from scorer.report import Report
 
 

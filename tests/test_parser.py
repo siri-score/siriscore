@@ -1,7 +1,6 @@
 """Tests for PSBT/rawtx/txid parser."""
 import base64
 
-
 P2WPKH_SCRIPT = "0014" + "11" * 20
 P2TR_SCRIPT = "5120" + "22" * 32
 
@@ -69,7 +68,7 @@ def _sample_psbt_b64() -> str:
 
 
 def test_rawtx_parses_inputs_and_outputs(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     monkeypatch.setattr(
         parser,
@@ -89,7 +88,7 @@ def test_rawtx_parses_inputs_and_outputs(monkeypatch):
 
 
 def test_rawtx_enriches_input_prevout_with_lookup(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     monkeypatch.setattr(parser, "get_tx_hex", lambda txid: _sample_prevtx_hex())
 
@@ -100,7 +99,7 @@ def test_rawtx_enriches_input_prevout_with_lookup(monkeypatch):
 
 
 def test_rawtx_default_makes_no_network_calls(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     def _fail(*args, **kwargs):
         raise AssertionError("network call attempted with lookup=False")
@@ -125,7 +124,7 @@ class _FakeBackend:
 
 
 def test_rawtx_enriches_via_rpc_backend_not_explorers(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     def _fail(*args, **kwargs):
         raise AssertionError("public explorer called despite RPC backend")
@@ -141,7 +140,7 @@ def test_rawtx_enriches_via_rpc_backend_not_explorers(monkeypatch):
 
 
 def test_txid_fetched_via_rpc_backend_not_explorers(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     def _fail(*args, **kwargs):
         raise AssertionError("public explorer called despite RPC backend")
@@ -173,7 +172,7 @@ def test_psbt_input_detected_and_prevout_applied():
 
 
 def test_txid_dispatches_to_lookup(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     txid = "a" * 64
     monkeypatch.setattr(parser, "get_tx", lambda value: {"hex": _sample_rawtx_hex()})
@@ -187,7 +186,8 @@ def test_txid_dispatches_to_lookup(monkeypatch):
 
 def test_txid_fetch_failure_returns_clear_error(monkeypatch):
     import pytest
-    import scorer.parser as parser
+
+    from scorer import parser
 
     monkeypatch.setattr(parser, "get_tx", lambda value: (_ for _ in ()).throw(RuntimeError("timeout")))
 
@@ -197,6 +197,7 @@ def test_txid_fetch_failure_returns_clear_error(monkeypatch):
 
 def test_parse_as_rejects_invalid_txid():
     import pytest
+
     from scorer.parser import parse_as
 
     with pytest.raises(ValueError, match="Invalid txid"):
@@ -205,6 +206,7 @@ def test_parse_as_rejects_invalid_txid():
 
 def test_parse_as_rejects_invalid_rawtx():
     import pytest
+
     from scorer.parser import parse_as
 
     with pytest.raises(ValueError, match="Invalid raw transaction hex"):
@@ -212,7 +214,7 @@ def test_parse_as_rejects_invalid_rawtx():
 
 
 def test_txid_uses_mempool_prevout_metadata(monkeypatch):
-    import scorer.parser as parser
+    from scorer import parser
 
     txid = "b" * 64
     monkeypatch.setattr(

@@ -1,6 +1,8 @@
 """Unit tests for each heuristic module (one test per heuristic)."""
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from scorer.report import Severity
 
 
@@ -176,7 +178,6 @@ class TestH4UtxoAge:
 
         def fake_get_utxo_block_height(txid):
             calls.append(txid)
-            return None
 
         monkeypatch.setattr(h4_utxo_age, "get_utxo_block_height", fake_get_utxo_block_height)
         inputs = [MagicMock(txid=f"{i:064x}") for i in range(20)]
@@ -268,7 +269,7 @@ class TestH9CoinJoinInput:
         assert finding.weight == 0
 
     def test_fires_on_all_whirlpool_denominations(self):
-        from scorer.heuristics.h9_coinjoin_input import check, WHIRLPOOL_DENOMS
+        from scorer.heuristics.h9_coinjoin_input import WHIRLPOOL_DENOMS, check
 
         for denom in WHIRLPOOL_DENOMS:
             inp = MagicMock(txid="b" * 64, vout=0, value=denom, address=None)
@@ -357,8 +358,9 @@ class TestH10CoinJoinTx:
 
 class TestCoinJoinH5Suppression:
     def test_h9_suppresses_h5(self):
-        import scorer
         from unittest.mock import patch
+
+        import scorer
 
         with patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9, \
              patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
@@ -379,8 +381,9 @@ class TestCoinJoinH5Suppression:
             assert "H9" in h5_ids
 
     def test_h10_applies_score_bonus(self):
-        import scorer
         from unittest.mock import patch
+
+        import scorer
 
         with patch("scorer.heuristics.h10_coinjoin_tx.check") as mock_h10, \
              patch("scorer.heuristics.h9_coinjoin_input.check") as mock_h9:
@@ -485,10 +488,12 @@ class TestH13NLocktime:
         assert check(tx, {}) is None
 
     def test_score_deduction_is_exactly_five(self):
-        import scorer
         from unittest.mock import patch
-        from scorer.report import Finding, Severity as Sev
+
+        import scorer
         from scorer.parser import ParsedTx, TxInput
+        from scorer.report import Finding
+        from scorer.report import Severity as Sev
 
         with patch("scorer.heuristics.h13_nlocktime.check") as mock_h13:
             mock_h13.return_value = Finding("H13", Sev.INFO, "nLockTime", "d", "s", 5)
