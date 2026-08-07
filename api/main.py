@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from scorer import import_labels
+from scorer import list_heuristics as _list_heuristics
 from scorer import score_as as _score_as
 from scorer.labels import add_label, get_all_labels, init_db
 
