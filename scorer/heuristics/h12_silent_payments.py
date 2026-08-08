@@ -10,7 +10,7 @@ MAX_ADDRESS_LOOKUPS = 5
 def _address_is_reused(address: str, get_fn) -> bool:
     try:
         return len(get_fn(address)) > 1
-    except Exception:  # noqa: BLE001, S112
+    except Exception:  # noqa: BLE001
         return False
 
 
