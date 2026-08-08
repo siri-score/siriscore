@@ -54,12 +54,13 @@ uvicorn api.main:app --reload
 
 ## Heuristics
 
-Fourteen privacy checks across two categories:
+Fifteen privacy checks across two categories:
 
 | Category | IDs | What they catch |
 |----------|-----|----------------|
 | Penalty  | H1–H8, H13–H15 | Script mismatch, round amounts, address reuse, UTXO age clustering, high input count, dust, non-BIP69 ordering, tainted labels, anti-fee-sniping nLockTime, mixed RBF signalling, round fee rates |
 | Positive | H9–H11 | Coinjoin inputs, coinjoin structure (+10 score bonus), Payjoin opportunity |
+| Info     | H12 | Silent payments recommendation (BIP-352) when H3 fires |
 
 Full heuristic reference at [docs.siriscore.xyz/heuristics](https://docs.siriscore.xyz/heuristics).
 
@@ -83,7 +84,7 @@ git checkout -b feature/issue-42/your-description
 python3 -m pytest -q
 ruff check scorer/ api/ tests/
 
-# Open a PR to dev
+# Open a PR to main
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide including how to add a new heuristic.

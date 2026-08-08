@@ -44,6 +44,9 @@ _HEURISTIC_DEFS = [
     ("H11", Severity.INFO,     "Payjoin opportunity available", 0,
      "Detects a BIP-77 Payjoin endpoint in the payment URI and reports an opportunity to break CIOH.",
      "Use your wallet's BIP-77 Payjoin support to send a Payjoin instead of a standard transaction."),
+    ("H12", Severity.INFO,     "Silent payments recommendation", 0,
+     "When H3 fires, checks whether any output uses a BIP-352 silent payment address and reports a targeted recommendation.",
+     "Request a BIP-352 silent payment address from the recipient to eliminate address reuse permanently."),
     ("H13", Severity.INFO,     "nLockTime Anti-Fee-Sniping Check", 5,
      "Flags transactions with nLockTime set to 0, missing the anti-fee-sniping convention most wallets use.",
      "Use a wallet that sets nLockTime to the current tip height."),
@@ -55,7 +58,7 @@ _HEURISTIC_DEFS = [
      "Use a wallet with dynamic fee estimation (mempool-based) rather than round defaults."),
 ]
 
-_NETWORK_IDS = {"H3", "H4"}
+_NETWORK_IDS = {"H3", "H4", "H12"}
 
 
 def list_heuristics() -> list[dict]:
