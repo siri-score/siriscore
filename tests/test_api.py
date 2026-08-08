@@ -55,7 +55,7 @@ def test_list_heuristics_contains_all_implemented_heuristics():
     response = client.get("/heuristics")
 
     ids = {h["id"] for h in response.json()["heuristics"]}
-    expected = {f"H{n}" for n in range(1, 16) if n != 12}
+    expected = {f"H{n}" for n in range(1, 16)}
     assert ids == expected
 
 
