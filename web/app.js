@@ -119,16 +119,50 @@ function updateCaption() {
 networkCheckbox.addEventListener('change', updateCaption);
 updateCaption();
 
-// Pill tabs 
-document.querySelectorAll('.pill').forEach(pill => {
+// Pill tabs (scoped to the input-type tabs — the mode toggle also uses .pill)
+document.querySelectorAll('.pill-tabs .pill').forEach(pill => {
   pill.addEventListener('click', () => {
-    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.pill-tabs .pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
     activeTab = pill.dataset.tab;
     txInput.placeholder = PLACEHOLDERS[activeTab];
     updateCaption();
   });
 });
+
+// ── Simple / Advanced mode ───────────────────────────────────
+const modeToggle = document.getElementById('mode-toggle');
+
+function applyMode(mode, { animate = true } = {}) {
+  const normalized = SiriScoreMode.normalizeMode(mode);
+  const page = document.querySelector('.page');
+  const apply = () => {
+    document.documentElement.classList.toggle('advanced-mode', normalized === 'advanced');
+    modeToggle.querySelectorAll('.mode-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === normalized);
+    });
+  };
+
+  if (animate && page) {
+    page.classList.add('mode-fade');
+    window.requestAnimationFrame(() => {
+      apply();
+      window.setTimeout(() => page.classList.remove('mode-fade'), 180);
+    });
+  } else {
+    apply();
+  }
+
+  try { localStorage.setItem(SiriScoreMode.MODE_KEY, normalized); } catch (e) { /* ignore */ }
+}
+
+modeToggle.querySelectorAll('.mode-pill').forEach(btn => {
+  btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+});
+
+let savedMode = SiriScoreMode.DEFAULT_MODE;
+try { savedMode = localStorage.getItem(SiriScoreMode.MODE_KEY); } catch (e) { /* ignore */ }
+applyMode(savedMode, { animate: false });
 
 // Hide error banner on input
 txInput.addEventListener('input', () => {
@@ -293,7 +327,13 @@ function renderReport(report) {
   }
 
   nextList.innerHTML = orderedFindings.slice(0, 3)
-    .map(f => `<li>${escHtml(f.suggestion)}</li>`)
+    .map(f => {
+      const plain = SiriScoreMode.plainCopyFor(f);
+      return `<li>
+        <span class="next-advanced">${escHtml(f.suggestion)}</span>
+        <span class="next-simple">${escHtml(plain.fix)}</span>
+      </li>`;
+    })
     .join('') || '<li>No immediate action needed.</li>';
 
   resultsZone.classList.add('visible');
@@ -341,15 +381,23 @@ function renderFinding(f) {
   const cardClass = f.positive ? 'positive' : sev;
   const badgeClass = f.positive ? 'positive' : sev;
   const badgeLabel = f.positive ? 'COINJOIN' : f.severity.toUpperCase();
+  const plain = SiriScoreMode.plainCopyFor(f);
   return `
     <div class="finding-card ${cardClass}">
-      <div class="finding-row1">
-        <span class="severity-badge ${badgeClass}">${badgeLabel}</span>
-        <span class="heuristic-id">${escHtml(f.id)}</span>
+      <div class="finding-advanced">
+        <div class="finding-row1">
+          <span class="severity-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="heuristic-id">${escHtml(f.id)}</span>
+        </div>
+        <div class="finding-title">${escHtml(f.title)}</div>
+        <div class="finding-detail">${escHtml(f.detail)}</div>
+        <div class="finding-suggestion">${f.positive ? '✓' : '&rarr;'} ${escHtml(f.suggestion)}</div>
       </div>
-      <div class="finding-title">${escHtml(f.title)}</div>
-      <div class="finding-detail">${escHtml(f.detail)}</div>
-      <div class="finding-suggestion">${f.positive ? '✓' : '&rarr;'} ${escHtml(f.suggestion)}</div>
+      <div class="finding-simple">
+        <div class="finding-title">${plain.emoji} ${escHtml(plain.title)}</div>
+        <div class="finding-detail">${escHtml(plain.explain)}</div>
+        <div class="finding-suggestion">${f.positive ? '✓ ' : 'Fix: '}${escHtml(plain.fix)}</div>
+      </div>
     </div>`;
 }
 
