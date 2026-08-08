@@ -10,6 +10,7 @@ from scorer.heuristics import (
     h9_coinjoin_input,
     h10_coinjoin_tx,
     h11_payjoin_opportunity,
+    h12_silent_payments,
     h13_nlocktime,
     h14_rbf_signalling,
     h15_fee_rate,
@@ -35,6 +36,7 @@ LOCAL = [
 NETWORK = [
     h3_address_reuse,
     h4_utxo_age,
+    h12_silent_payments,
 ]
 
 ALL = LOCAL + NETWORK
