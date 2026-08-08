@@ -63,6 +63,8 @@ Fourteen privacy checks across two categories:
 
 Full heuristic reference at [docs.siriscore.xyz/heuristics](https://docs.siriscore.xyz/heuristics).
 
+For the complete REST API reference, including `GET /heuristics`, `POST /score`, and the `/labels` endpoints, see [docs.siriscore.xyz/api](https://docs.siriscore.xyz/api).
+
 ---
 
 ## Contributing
