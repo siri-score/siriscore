@@ -49,6 +49,17 @@
 
   <link rel="icon" href="images/eyelogoonly.png" type="image/png" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Restore the saved Simple/Advanced preference before first paint so
+    // returning Advanced-mode visitors don't see a Simple-mode flash.
+    (function () {
+      try {
+        if (localStorage.getItem('siriscore-mode') === 'advanced') {
+          document.documentElement.classList.add('advanced-mode');
+        }
+      } catch (e) { /* localStorage unavailable (privacy mode, file://, etc.) */ }
+    })();
+  </script>
 </head>
 <body>
 
@@ -58,11 +69,17 @@
     <img class="wordmark-icon" src="images/eyelogoonly.png" alt="" />
     <img class="wordmark-name" src="images/sirisocorenamelogo.png" alt="SiriScore" />
   </a>
-  <nav class="nav-links">
-    <a href="https://docs.siriscore.xyz/" target="_blank" rel="noopener">Docs</a>
-    <a href="https://github.com/siri-score/siriscore" target="_blank" rel="noopener">GitHub</a>
-    <a href="#" id="learn-link">Learn</a>
-  </nav>
+  <div class="nav-right">
+    <nav class="nav-links">
+      <a href="https://docs.siriscore.xyz/" target="_blank" rel="noopener">Docs</a>
+      <a href="https://github.com/siri-score/siriscore" target="_blank" rel="noopener">GitHub</a>
+      <a href="#" id="learn-link">Learn</a>
+    </nav>
+    <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Detail level">
+      <button type="button" class="pill mode-pill" data-mode="simple">Simple</button>
+      <button type="button" class="pill mode-pill" data-mode="advanced">Advanced</button>
+    </div>
+  </div>
 </header>
 
 <!-- ── Page ────────────────────────────────────────────────── -->
@@ -636,6 +653,7 @@
   </div>
 </aside>
 
+<script src="mode.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

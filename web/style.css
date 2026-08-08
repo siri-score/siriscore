@@ -120,6 +120,8 @@ header {
   display: block;
 }
 
+.nav-right { display: flex; align-items: center; gap: 20px; }
+
 .nav-links { display: flex; gap: 20px; }
 
 .nav-links a {
@@ -131,6 +133,11 @@ header {
 }
 
 .nav-links a:hover { color: var(--orange); }
+
+/* ── Simple / Advanced mode toggle ─────────────────────────── */
+.mode-toggle { display: flex; gap: 6px; flex-shrink: 0; }
+
+.mode-toggle .pill { padding: 6px 14px; }
 
 /* ── Mobile footer */
 .mobile-footer {
@@ -159,11 +166,18 @@ header {
   .nav-links { display: none; }
   .mobile-footer { display: flex; }
   body { padding-bottom: 56px; }
-  header { justify-content: center; }
+
+  /* Mode toggle stays top-right beside the logo on mobile, so keep the
+     header split instead of centering a now-lone wordmark. */
+  .wordmark-icon { height: 44px; }
+  .wordmark-name { height: 28px; }
+  .mode-toggle .pill { padding: 5px 10px; font-size: 13px; }
 }
 
 /* ── Page wrapper ───────────────────────────────────────── */
-.page { max-width: 780px; margin: 0 auto; padding: 0 24px 64px; }
+.page { max-width: 780px; margin: 0 auto; padding: 0 24px 64px; transition: opacity 180ms ease; }
+
+.page.mode-fade { opacity: .35; }
 
 /* ── Input zone ─────────────────────────────────────────── */
 .input-zone { padding: 48px 0 32px; }
@@ -806,3 +820,22 @@ textarea:focus { border-color: var(--orange); }
   .score-left { width: auto; }
   .glossary-panel { width: 100%; }
 }
+
+/* ── Simple / Advanced mode visibility ──────────────────────
+   Simple mode is the default (no .advanced-mode class on <html>):
+   hide technical metadata, heuristic IDs, severity badges and the
+   Checks section; show plain-English finding copy instead.
+   Kept last in the file so it always wins over the component rules
+   above on equal specificity (e.g. .meta-chips' own `display: flex`). */
+.finding-advanced,
+.checks-section,
+.meta-chips,
+.next-advanced { display: none; }
+
+html.advanced-mode .finding-simple,
+html.advanced-mode .next-simple { display: none; }
+
+html.advanced-mode .finding-advanced { display: block; }
+html.advanced-mode .checks-section   { display: block; }
+html.advanced-mode .meta-chips       { display: flex; }
+html.advanced-mode .next-advanced    { display: inline; }
